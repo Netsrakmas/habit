@@ -1578,6 +1578,22 @@ function renderPlanningInto(scr){
   active.forEach(function(g){ table.appendChild(planRow(g)); });
   scr.appendChild(table);
 
+  // parked goals keep their history and return as one-tap suggestions here
+  const parked = state.goals.filter(g=>g.status==="parked");
+  if (parked.length && slotAction(active.length)!=="blocked"){
+    scr.appendChild(el("div","tiny-head caps","Bring one back"));
+    const chips = el("div","chips");
+    parked.forEach(function(g){
+      const c = el("button","chip", g.name);
+      c.addEventListener("click", function(){
+        if (slotAction(state.goals.filter(x=>x.status==="active").length)==="friction"){ onAddGoal(); return; }
+        g.status="active"; save(); planExpand=null; renderRoot();
+      });
+      chips.appendChild(c);
+    });
+    scr.appendChild(chips);
+  }
+
   const addBtn = el("button","btn quiet",STR.addGoal); addBtn.style.marginTop="16px";
   addBtn.addEventListener("click", function(){ planningAdd(); });
   if (slotAction(active.length)==="blocked") addBtn.disabled=true;

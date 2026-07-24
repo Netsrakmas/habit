@@ -1,0 +1,1 @@
+  await p.click('; await p.waitForTimeout(250);      // expand
