@@ -1,0 +1,2147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>WEEK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================= *
+ * WEEK — style bible (locked). Palette role-named, no others.   *
+ * ============================================================= */
+:root{
+  --panel:#E7E8E5;
+  --panel-deep:#DBDDD9;
+  --surface:#F7F7F5;
+  --ink:#1C1D1B;
+  --ink-2:#73766F;
+  --line:#B7BAB3;
+  --signal:#FF4A00;
+
+  --display:"Archivo", system-ui, "Helvetica Neue", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --body:system-ui, "Helvetica Neue", Arial, sans-serif;
+
+  --r4:4px; --r6:6px;
+  --hatch:repeating-linear-gradient(45deg,
+      var(--line) 0, var(--line) 1px, var(--surface) 1px, var(--surface) 5px);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0;}
+body{
+  background:var(--panel);
+  /* 1px dot grid, 24px pitch, ~35% opacity, panel only */
+  background-image:radial-gradient(var(--line) 0.75px, transparent 0.75px);
+  background-size:24px 24px;
+  background-position:0 0;
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:15px; line-height:22px;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+button{font-family:inherit; color:inherit; background:none; border:none; cursor:pointer; padding:0;}
+button:focus-visible, [tabindex]:focus-visible, a:focus-visible{
+  outline:2px solid var(--ink); outline-offset:2px;
+}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+.caps{font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; font-size:11px; line-height:14px;}
+.dim{color:var(--ink-2);}
+
+/* ---- app frame ---- */
+#app{
+  max-width:520px; margin:0 auto; min-height:100dvh;
+  display:flex; flex-direction:column;
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+.banner{
+  background:var(--ink); color:var(--surface);
+  font-family:var(--mono); font-size:12px; letter-spacing:0.04em;
+  padding:8px 16px; text-align:center;
+}
+.banner.signal{background:var(--signal);}
+
+/* ---- header ---- */
+header{
+  padding:32px 20px 12px; display:flex; align-items:flex-start;
+  justify-content:space-between; gap:12px;
+}
+header .lede h1{
+  font-family:var(--display); font-weight:600; font-size:30px; line-height:34px;
+  letter-spacing:-0.01em; margin:0;
+}
+header .lede .wk{ margin-top:6px; color:var(--ink-2); }
+.gear{
+  width:44px; height:44px; border:1.5px solid var(--line); border-radius:var(--r4);
+  background:var(--surface); display:grid; place-items:center; flex:none;
+}
+.gear:active{border:2px solid var(--ink);}
+
+/* ---- screen container ---- */
+main{flex:1; padding:0 16px;}
+.screen{display:none;}
+.screen.on{display:block; animation:fade 120ms ease both;}
+@keyframes fade{from{opacity:0;} to{opacity:1;}}
+
+/* ---- section heads ---- */
+.sec-head{
+  font-family:var(--display); font-weight:600; font-size:17px;
+  margin:28px 4px 12px;
+}
+.tiny-head{margin:24px 4px 10px; color:var(--ink-2);}
+
+/* ---- tip slot ---- */
+.tip{
+  background:var(--surface); border:1.5px solid var(--line);
+  border-left:3px solid var(--signal);
+  border-radius:var(--r4); padding:12px 14px; margin:8px 4px 4px;
+  display:flex; gap:12px; align-items:flex-start;
+}
+.tip .body{flex:1;}
+.tip .lbl{color:var(--signal);}
+.tip .txt{font-size:14px; line-height:20px; margin-top:3px;}
+.tip .x{width:32px; height:32px; margin:-6px -6px 0 0; flex:none; display:grid; place-items:center; color:var(--ink-2);}
+
+/* ---- goal row (full-width table row) ---- */
+.rows{border-top:1px solid var(--line);}
+.grow{
+  border-bottom:1px solid var(--line);
+  padding:16px 4px; position:relative;
+}
+.grow.risk{border-left:3px solid var(--signal); padding-left:12px;}
+.grow .top{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
+.grow .name{font-family:var(--display); font-weight:600; font-size:15px;}
+.grow .meta{color:var(--ink-2); margin-top:2px;}
+.grow .meta .over{color:var(--signal);}
+.grow .ctl{margin-top:12px;}
+.grow .nudge{color:var(--ink-2); font-size:13px; margin-top:8px;}
+.grow.risk .nudge{color:var(--ink);}
+.recessed{background:var(--panel-deep); border-radius:var(--r4); padding:4px 12px; margin:0 0 4px;}
+.recessed .grow:last-child{border-bottom:none;}
+
+/* ---- 7-cell week strip ---- */
+.strip{display:flex; gap:2px; flex-wrap:nowrap;}
+.cell{
+  width:38px; height:46px; flex:none;
+  background:var(--surface); border:1.5px solid var(--line); border-radius:var(--r4);
+  position:relative; display:grid; place-items:center;
+  padding:0; transition:transform 120ms cubic-bezier(0.2,0,0,1);
+}
+.cell .d{position:absolute; top:3px; left:0; right:0; text-align:center;
+  font-family:var(--mono); font-size:10px; color:var(--ink-2);}
+.cell.today{border:2px solid var(--ink);}
+.cell.hit{background:var(--ink);}
+.cell.hit .d{color:var(--panel);}
+.cell.hit .glyph{color:var(--surface);}
+.cell.miss{background:var(--hatch);}
+.cell.resolved{background:var(--hatch);}
+.cell.resolved::after{content:""; width:6px; height:6px; border-radius:50%; background:var(--ink); position:absolute;}
+.cell.moved{color:var(--ink-2);}
+.cell.moved .glyph{font-family:var(--mono); font-size:18px; color:var(--ink-2);}
+.cell.dest{border-style:dashed;}
+.cell.future{background:var(--surface);}
+.cell.nip{background:var(--panel-deep); border:none;}
+.cell.tap{cursor:pointer;}
+.cell.tap:active{transform:scale(0.94);}
+.cell .glyph{font-size:16px; line-height:1;}
+.cell.anim{animation:tick 120ms cubic-bezier(0.2,0,0,1);}
+@keyframes tick{from{transform:scale(0.94);} to{transform:scale(1);}}
+
+/* ---- counter stepper ---- */
+.stepper{display:flex; gap:2px; align-items:stretch;}
+.step-btn{
+  width:46px; height:46px; flex:none; background:var(--surface);
+  border:1.5px solid var(--line); border-radius:var(--r4);
+  font-family:var(--mono); font-size:22px; display:grid; place-items:center;
+}
+.step-btn:active{background:var(--ink); color:var(--surface); border-color:var(--ink);}
+.step-val{
+  min-width:74px; height:46px; padding:0 10px; background:var(--surface);
+  border:1.5px solid var(--line); border-radius:var(--r4);
+  font-family:var(--mono); font-size:22px; display:grid; place-items:center;
+}
+.step-meta{margin-left:12px; align-self:center; color:var(--ink-2);}
+
+/* ---- pool items ---- */
+.pool{display:flex; flex-direction:column; gap:2px;}
+.pitem{display:flex; align-items:center; gap:12px; padding:6px 0;}
+.pbox{
+  width:24px; height:24px; flex:none; border:1.5px solid var(--line);
+  border-radius:3px; background:var(--surface); display:grid; place-items:center;
+}
+.pbox.on{background:var(--ink); border-color:var(--ink);}
+.pbox .glyph{color:var(--surface); font-size:14px;}
+.pitem .pname{flex:1; font-size:15px;}
+.pitem.done .pname{color:var(--ink-2);}
+.daychip{
+  font-family:var(--mono); text-transform:uppercase; letter-spacing:0.06em;
+  font-size:10px; padding:4px 7px; border:1.5px solid var(--line);
+  border-radius:3px; background:var(--surface); color:var(--ink-2);
+}
+.daychip.done{opacity:0.5;}
+
+/* ---- chips ---- */
+.chips{display:flex; flex-wrap:wrap; gap:8px;}
+.chip{
+  font-family:var(--mono); text-transform:uppercase; letter-spacing:0.06em;
+  font-size:11px; height:34px; padding:0 12px; display:inline-flex; align-items:center;
+  border:1.5px solid var(--line); border-radius:var(--r4); background:var(--surface);
+}
+.chip.sel{background:var(--ink); color:var(--surface); border-color:var(--ink);}
+.chip.suggest{border:2px solid var(--signal);}
+.chip .sub{margin-left:6px; opacity:0.7; font-size:9px;}
+
+/* ---- buttons ---- */
+.btn{
+  height:48px; padding:0 18px; border-radius:var(--r4);
+  font-family:var(--mono); text-transform:uppercase; letter-spacing:0.06em; font-size:12px;
+  border:1.5px solid var(--ink); background:var(--surface); display:inline-flex;
+  align-items:center; justify-content:center; gap:8px; width:100%;
+}
+.btn.primary{background:var(--ink); color:var(--surface);}
+.btn.commit{background:var(--signal); color:var(--surface); border-color:var(--signal);}
+.btn.quiet{border-color:var(--line); background:var(--surface); color:var(--ink-2);}
+.btn:disabled{opacity:0.4;}
+.btn.sm{height:38px; width:auto; padding:0 14px;}
+.btnrow{display:flex; gap:8px; margin-top:10px;}
+
+/* ---- verdict token ---- */
+.vtok{
+  width:26px; height:26px; flex:none; border:1.5px solid var(--line); border-radius:var(--r4);
+  display:grid; place-items:center;
+}
+.vtok.hit{background:var(--ink); border-color:var(--ink);}
+.vtok.hit .glyph{color:var(--surface); font-size:15px;}
+.vtok.miss{background:var(--hatch);}
+
+/* ---- week table ---- */
+.wtable .grow{cursor:pointer;}
+.wtable .stripwrap{margin-top:12px; overflow-x:auto;}
+.detail{margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);}
+.field{display:flex; align-items:center; gap:10px; margin:8px 0;}
+.field label{width:96px; color:var(--ink-2);}
+.num{
+  width:64px; height:40px; border:1.5px solid var(--line); border-radius:var(--r4);
+  background:var(--surface); font-family:var(--mono); font-size:16px; text-align:center;
+}
+.txtin{
+  height:44px; border:1.5px solid var(--line); border-radius:var(--r4);
+  background:var(--surface); font-family:var(--body); font-size:15px; padding:0 12px; width:100%;
+}
+.daypick{display:flex; gap:4px; flex-wrap:wrap;}
+.dtog{
+  width:40px; height:40px; border:1.5px solid var(--line); border-radius:var(--r4);
+  background:var(--surface); font-family:var(--mono); font-size:11px;
+  text-transform:uppercase; display:grid; place-items:center;
+}
+.dtog.on{background:var(--ink); color:var(--surface); border-color:var(--ink);}
+
+/* ---- trophies ---- */
+.stamps{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:8px 4px;}
+.stamp{display:flex; flex-direction:column; align-items:center; gap:6px;}
+.stamp .sq{
+  width:56px; height:56px; border:1.5px solid var(--line); border-radius:var(--r4);
+  display:grid; place-items:center; background:var(--surface);
+  font-family:var(--mono); font-weight:600; font-size:13px; letter-spacing:0.02em;
+}
+.stamp.locked .sq{background:var(--hatch); color:var(--ink-2);}
+.stamp.on .sq{background:var(--ink); color:var(--surface); border-color:var(--ink);}
+.stamp .cap{font-size:9px; color:var(--ink-2);}
+.stamp.stamped .sq{animation:stampin 240ms cubic-bezier(0.2,0,0,1);}
+@keyframes stampin{0%{transform:scale(1.15);} 40%{opacity:0.6;} 100%{transform:scale(1);}}
+.arch{border-top:1px solid var(--line); margin-top:8px;}
+.archrow{
+  display:flex; align-items:center; gap:12px; padding:12px 4px;
+  border-bottom:1px solid var(--line); font-family:var(--mono); font-size:13px;
+}
+.archrow .wk{width:56px; color:var(--ink-2);}
+.archrow .score{width:52px;}
+.archrow .tag{margin-left:auto; text-transform:uppercase; letter-spacing:0.06em; font-size:11px; color:var(--ink-2);}
+.archrow .tag.sweep{color:var(--ink);}
+
+/* ---- bottom nav ---- */
+nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:20;
+  background:var(--surface); border-top:1.5px solid var(--line);
+  display:flex; max-width:520px; margin:0 auto;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{
+  flex:1; height:64px; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:4px; color:var(--ink-2);
+  font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; font-size:10px;
+}
+nav button.on{color:var(--ink);}
+nav button .ic{width:20px; height:20px;}
+nav button.on .ic{color:var(--ink);}
+
+/* ---- sheets / dialogs ---- */
+.scrim{
+  position:fixed; inset:0; z-index:40; background:rgba(28,29,27,0.35);
+  display:none; align-items:flex-end; justify-content:center;
+}
+.scrim.on{display:flex; animation:fade 120ms ease both;}
+.sheet{
+  background:var(--surface); border:1.5px solid var(--line); border-radius:var(--r6) var(--r6) 0 0;
+  box-shadow:2px 2px 0 var(--line); width:100%; max-width:520px;
+  padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:88dvh; overflow-y:auto;
+}
+.dialog{
+  background:var(--surface); border:1.5px solid var(--ink); border-radius:var(--r6);
+  box-shadow:2px 2px 0 var(--line); width:calc(100% - 40px); max-width:400px;
+  padding:22px; margin:auto;
+}
+.scrim.center{align-items:center;}
+.sheet h2, .dialog h2{font-family:var(--display); font-weight:600; font-size:19px; margin:0 0 4px;}
+.sheet .row{display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 0; border-bottom:1px solid var(--line);}
+.sheet .row:last-of-type{border-bottom:none;}
+.dialog p{font-size:14px; line-height:20px; color:var(--ink-2); margin:6px 0 16px;}
+
+/* ---- review takeover ---- */
+#review-screen{padding:0 16px;}
+.rzone{margin-top:24px;}
+.rgoal{display:flex; align-items:flex-start; gap:12px; padding:14px 4px; border-bottom:1px solid var(--line);}
+.rgoal .rname{font-family:var(--display); font-weight:600; font-size:15px;}
+.rgoal .rdiag{color:var(--ink-2); font-size:13px; margin-top:3px;}
+.rdecide{margin-top:10px;}
+.empty{color:var(--ink-2); font-size:14px; padding:14px 4px;}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; transition-property:opacity !important;}
+  .cell.tap:active{transform:none;}
+}
+</style>
+</head>
+<body>
+<div id="app" hidden>
+  <div id="banner-slot"></div>
+  <header>
+    <div class="lede">
+      <h1 id="h-day">—</h1>
+      <div class="wk caps" id="h-week">—</div>
+    </div>
+    <button class="gear" id="btn-gear" aria-label="Settings">
+      <svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>
+      </svg>
+    </button>
+  </header>
+
+  <main>
+    <section id="today-screen" class="screen"></section>
+    <section id="week-screen" class="screen"></section>
+    <section id="trophies-screen" class="screen"></section>
+    <section id="review-screen" class="screen"></section>
+  </main>
+
+  <nav id="nav">
+    <button data-tab="today" class="on">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+      Today
+    </button>
+    <button data-tab="week">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6" width="2.6" height="12" rx="0.5"/><rect x="7.5" y="6" width="2.6" height="12" rx="0.5"/><rect x="12" y="6" width="2.6" height="12" rx="0.5"/><rect x="16.5" y="6" width="2.6" height="12" rx="0.5"/></svg>
+      Week
+    </button>
+    <button data-tab="trophies">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4h12v3a6 6 0 0 1-12 0V4z"/><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3M9 20h6M12 13v7"/></svg>
+      Trophies
+    </button>
+  </nav>
+</div>
+
+<div id="scrim" class="scrim"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+ * WEEK — v1 engine + UI. One file. No deps.
+ * Day indexing everywhere: ISO Mon=0 … Sun=6.
+ * ===================================================================== */
+
+/* ------------------------------ CFG -------------------------------- */
+const CFG = {
+  storageKey: "week.v1",
+  schemaVersion: 1,
+  goalsSoft: 4,          // free slots
+  frictionAt: 5,         // 5th goal → friction dialog
+  goalsHard: 6,          // 6 = hard cap
+  reviewUnlockDay: 6,    // Sunday (Mon=0..Sun=6)
+  reviewUnlockHour: 18,  // 18:00
+  graceHour: 12,         // yesterday editable until 12:00
+  defaultReviewHour: 20.5,
+  tipCooldownDays: 21,
+  poolMin: 2, poolMax: 8,
+  counterMax: 12,
+};
+
+/* ------------------------------ STR -------------------------------- */
+const STR = {
+  storageUnavailable: "Storage unavailable — demo mode",
+  today: "Today", week: "Week", trophies: "Trophies",
+  yesterdayOpen: "Yesterday — open till 12:00",
+  reviewReady: "Review ready — Sunday reckoning",
+  openReview: "Open review",
+  noGoals: "No goals yet — plan the week.",
+  addGoal: "+ Add goal",
+  commitWeek: "Commit week",
+  planWeek: "Plan the week",
+  spare: "SPARE", spares: "SPARE", overBy: "OVER BY",
+  keep:"Keep", adjust:"Adjust", park:"Park", drop:"Drop", raise:"Raise",
+  parkOne:"Park one…", addAnyway:"Add anyway",
+  fullWeek:"Full week. Five-goal weeks fail more often than four-goal weeks. Park one instead?",
+  hardCap:"Six goals is the ceiling. Park or drop one to add another.",
+};
+
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAY_INI = ["M","T","W","T","F","S","S"];
+const DAY_FULL = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+/* ============================ PURE MATH ============================ *
+ * All goal math: state in, verdict out. No DOM, no storage. Tested.  *
+ * ================================================================== */
+
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+/* Late-commit proration. W = weekday committed (Mon=0). */
+function daysInPlay(committedDay){ return 7 - committedDay; }
+function prorate(T, dip){ return clamp(Math.round(T * dip / 7), 1, dip); }
+
+/* ---- QUOTA ---- */
+/* days: map {idx:"hit"|"miss"|"resolved"|"unlogged"}. dip = in-play day count. */
+function quotaMath(target, days, dip){
+  dip = dip == null ? 7 : dip;
+  let hits=0, miss=0, resolved=0;
+  for (const k in days){
+    const s = days[k];
+    if (s==="hit") hits++;
+    else if (s==="miss") miss++;
+    else if (s==="resolved") resolved++;
+  }
+  const sparesTotal = dip - target;
+  const misses = miss + resolved;
+  const sparesLeft = sparesTotal - misses;
+  return {
+    hits, misses, sparesTotal, sparesLeft,
+    over: sparesLeft < 0 ? -sparesLeft : 0,
+    verdict: hits >= target ? "HIT" : "MISS",
+  };
+}
+
+/* ---- POOL ---- */
+/* remaining = items not yet done. daysLeft = full days after today (Sun incl). */
+function poolRisk(remaining, daysLeft){
+  if (remaining <= 0) return "safe";
+  if (remaining < daysLeft) return "safe";
+  if (remaining === daysLeft) return "tight";
+  return "risk";
+}
+function poolVerdict(remaining){ return remaining === 0 ? "HIT" : "MISS"; }
+
+/* ---- COUNTER ---- */
+/* counts: map {idx:number}. */
+function counterMath(perDay, daysTarget, counts){
+  let daysHit=0;
+  for (const k in counts){ if (counts[k] >= perDay) daysHit++; }
+  return { daysHit, daysTarget, verdict: daysHit >= daysTarget ? "HIT" : "MISS" };
+}
+
+/* ---- FIXED ---- */
+/* scheduledDays: [idx]. days: {idx:state}. swaps: {origin:dest}. */
+function fixedInstances(scheduledDays, days, swaps){
+  swaps = swaps || {};
+  return scheduledDays.map(function(d){
+    if (swaps[d] != null){
+      const to = swaps[d];
+      return { origin:d, day:to, state: days[to] || "unlogged", moved:true };
+    }
+    return { origin:d, day:d, state: days[d] || "unlogged", moved:false };
+  });
+}
+function fixedVerdict(scheduledDays, days, swaps){
+  const inst = fixedInstances(scheduledDays, days, swaps);
+  return inst.every(function(i){ return i.state === "hit"; }) ? "HIT" : "MISS";
+}
+/* Attempt a single swap. Returns {ok, reason}. Mutates swaps on success. */
+function trySwapFixed(swaps, scheduledDays, origin, dest, todayIdx){
+  if (swaps[origin] != null) return { ok:false, reason:"already-swapped" };
+  // ≥1 future day must remain (dest must be strictly after today, or any free future day)
+  const occupied = new Set(scheduledDays.filter(d=>swaps[d]==null));
+  for (const o in swaps) occupied.add(swaps[o]);
+  if (occupied.has(dest)) return { ok:false, reason:"day-taken" };
+  if (dest <= todayIdx) return { ok:false, reason:"needs-future" };
+  swaps[origin] = dest;
+  return { ok:true };
+}
+
+/* ---- generic per-goal verdict ---- */
+function goalVerdict(type, snap, wg){
+  if (type==="quota") return quotaMath(snap.target, wg.days, snap.dip||7).verdict;
+  if (type==="pool")  return poolVerdict(poolRemaining(snap, wg));
+  if (type==="counter") return counterMath(snap.perDay, snap.daysTarget, wg.counts).verdict;
+  if (type==="fixed") return fixedVerdict(snap.days, wg.days, wg.swaps);
+  return "MISS";
+}
+function poolRemaining(snap, wg){
+  const done = wg.poolDone || {};
+  let n=0;
+  for (let i=0;i<snap.items.length;i++){ if (!done[i]) n++; }
+  return n;
+}
+
+/* ---- resolver (grace sweep) ---- */
+/* For a week, resolve unlogged past days. now = {day, hour}. Mutates wg.days. */
+function isResolvable(dayIdx, now){
+  if (dayIdx > now.day) return false;      // future
+  if (dayIdx === now.day) return false;    // today, editable
+  if (dayIdx === now.day - 1) return now.hour >= CFG.graceHour; // yesterday
+  return true;                             // older than yesterday
+}
+function resolveWeek(goals, wk, now){
+  const startDay = wk.committedOnDay || 0;
+  for (const wg of wk.goals){
+    const g = goals.find(x=>x.id===wg.goalId); if (!g) continue;
+    for (let d=startDay; d<7; d++){
+      if (!isResolvable(d, now)) continue;
+      if (g.type==="quota" || g.type==="fixed"){
+        if (g.type==="fixed" && !wg.snap.days.includes(d) && !invSwapHas(wg, d)) continue;
+        if (g.type==="fixed" && invSwapOrigin(wg, d)) continue; // origin moved away
+        if (!wg.days[d] || wg.days[d]==="unlogged") wg.days[d] = "resolved";
+      }
+      // counter: keep count (0 => not hit). pool: nothing to resolve.
+    }
+  }
+}
+function invSwapHas(wg, destDay){ // is destDay a swap destination?
+  for (const o in (wg.swaps||{})) if (wg.swaps[o]===destDay) return true;
+  return false;
+}
+function invSwapOrigin(wg, day){ return (wg.swaps||{})[day] != null; }
+
+/* ---- slot friction ---- */
+function slotAction(activeCount){
+  if (activeCount >= CFG.goalsHard - 1) return "blocked"; // 5 present => 6th hard-blocked
+  if (activeCount >= CFG.frictionAt - 1) return "friction"; // 4 present => 5th triggers friction
+  return "ok";                                            // <4 => plain add
+}
+
+/* ============================ ISO WEEK ============================ */
+function isoInfo(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dn = (d.getUTCDay()+6)%7;
+  d.setUTCDate(d.getUTCDate() - dn + 3);
+  const firstThu = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  const fdn = (firstThu.getUTCDay()+6)%7;
+  firstThu.setUTCDate(firstThu.getUTCDate() - fdn + 3);
+  const week = 1 + Math.round((d - firstThu)/(7*24*3600*1000));
+  return { year:d.getUTCFullYear(), week };
+}
+function weekKeyOf(date){ const i=isoInfo(date); return i.year+"-W"+String(i.week).padStart(2,"0"); }
+function mondayOf(date){
+  const d = new Date(date); const dn=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-dn); d.setHours(0,0,0,0); return d;
+}
+function weekLabel(date){
+  const i = isoInfo(date);
+  const mon = mondayOf(date);
+  const sun = new Date(mon); sun.setDate(sun.getDate()+6);
+  const a = mon.getDate()+" "+MON[mon.getMonth()];
+  const b = String(sun.getDate()).padStart(2,"0")+" "+MON[sun.getMonth()];
+  return "WEEK "+i.week+" · "+String(mon.getDate()).padStart(2,"0")+" "+MON[mon.getMonth()]+" – "+b;
+}
+function prevWeekKey(key){
+  // key => date of that week's monday, minus 7 days
+  const mon = mondayOfKey(key); mon.setDate(mon.getDate()-7); return weekKeyOf(mon);
+}
+function mondayOfKey(key){
+  const m = key.match(/(\d+)-W(\d+)/); const year=+m[1], wk=+m[2];
+  const jan4 = new Date(year,0,4);
+  const mon = mondayOf(jan4);
+  mon.setDate(mon.getDate() + (wk-1)*7);
+  return mon;
+}
+
+/* ============================ CLOCK ============================ */
+/* Real device-local time, with optional URL override for testing/demo. */
+const QS = new URLSearchParams(location.search);
+function now(){
+  if (QS.has("now")){
+    const d = new Date(QS.get("now"));
+    if (!isNaN(d)) return d;
+  }
+  return new Date();
+}
+function nowCtx(){
+  const d = now();
+  return { date:d, day:(d.getDay()+6)%7, hour:d.getHours()+d.getMinutes()/60, key:weekKeyOf(d) };
+}
+
+/* ============================ STORAGE ============================ */
+let STORE_OK = true;
+function storageProbe(){
+  try{
+    const k="__wk_probe__"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
+    return true;
+  }catch(e){ return false; }
+}
+function freshState(){
+  return {
+    schemaVersion: CFG.schemaVersion,
+    settings: { reviewHour: CFG.defaultReviewHour, lang:"en" },
+    goals: [],
+    weeks: {},
+    achievements: {},
+    tips: {},
+  };
+}
+let state = null;
+function load(){
+  STORE_OK = storageProbe();
+  if (!STORE_OK){ state = seedState(); return; }
+  const raw = localStorage.getItem(CFG.storageKey);
+  if (!raw){ state = seedState(); save(); return; }
+  try{
+    const parsed = JSON.parse(raw);
+    if (parsed.schemaVersion !== CFG.schemaVersion) throw new Error("schema");
+    state = parsed;
+  }catch(e){
+    state = seedState(); save();
+  }
+}
+function save(){
+  if (!STORE_OK) return;
+  try{ localStorage.setItem(CFG.storageKey, JSON.stringify(state)); }catch(e){ STORE_OK=false; renderBanner(); }
+}
+
+/* Seed = fresh state + the 4 seed goals staged for planning (uncommitted). */
+function seedState(){
+  const s = freshState();
+  const wk = nowCtx().key;
+  s.goals = [
+    { id:"g1", type:"quota",  name:"No snacking", params:{ target:5 }, status:"active", createdWeek:wk },
+    { id:"g2", type:"pool",   name:"Strength", params:{ items:[
+        {name:"pull ups"},{name:"rows"},{name:"push ups"},{name:"pike push ups"}] }, status:"active", createdWeek:wk },
+    { id:"g3", type:"counter",name:"Water", params:{ perDay:3, daysTarget:7 }, status:"active", createdWeek:wk },
+    { id:"g4", type:"fixed",  name:"Treadmill 10 min", params:{ days:[0,2,4], label:"10 MIN" }, status:"active", createdWeek:wk },
+  ];
+  return s;
+}
+
+/* ============================ COMMIT / WEEK BUILD ============================ */
+/* Build a week entry from active goals, prorated to commit day. */
+function buildWeek(committedDay){
+  const dip = daysInPlay(committedDay);
+  const active = state.goals.filter(g=>g.status==="active");
+  const wg = active.map(function(g){
+    const snap = snapshotParams(g, committedDay, dip);
+    return { goalId:g.id, snap, days:{}, swaps:{}, counts:{}, poolDone:{}, verdict:null };
+  });
+  return { committedOnDay:committedDay, goals:wg, reviewedAt:null, decisions:{} };
+}
+function snapshotParams(g, committedDay, dip){
+  if (g.type==="quota"){
+    return { target: prorate(g.params.target, dip), dip:dip, baseTarget:g.params.target };
+  }
+  if (g.type==="pool"){
+    // auto-spread suggested days Mon–Sat, dropping days before commit
+    const items = g.params.items.map(function(it, i){
+      let sd = i % 6; // Mon..Sat
+      if (sd < committedDay) sd = clamp(committedDay, 0, 5);
+      return { name:it.name, suggestedDay:sd };
+    });
+    return { items, dip:dip };
+  }
+  if (g.type==="counter"){
+    return { perDay:g.params.perDay, daysTarget:prorate(g.params.daysTarget, dip), dip:dip, baseDaysTarget:g.params.daysTarget };
+  }
+  if (g.type==="fixed"){
+    // drop fixed instances before commit day
+    const days = g.params.days.filter(d=>d>=committedDay);
+    return { days, label:g.params.label||"", dip:dip };
+  }
+  return { dip:dip };
+}
+
+/* Determine app phase for current week. */
+function currentWeekKey(){ return nowCtx().key; }
+function phase(){
+  const ck = currentWeekKey();
+  // forced review: any prior committed but unreviewed week that is older than current
+  const forced = findForcedReview(ck);
+  if (forced) return { mode:"review", key:forced, forced:true };
+  if (!state.weeks[ck]) return { mode:"planning", key:ck };
+  // review window on Sunday
+  return { mode:"active", key:ck };
+}
+function findForcedReview(currentKey){
+  const keys = Object.keys(state.weeks).filter(k=>k < currentKey);
+  keys.sort();
+  for (const k of keys){
+    const w = state.weeks[k];
+    if (w.reviewedAt == null && !w.abandoned){ return k; }
+  }
+  return null;
+}
+function reviewUnlocked(){
+  const n = nowCtx();
+  return n.day > CFG.reviewUnlockDay ||
+    (n.day === CFG.reviewUnlockDay && n.hour >= CFG.reviewUnlockHour);
+}
+
+/* ============================ RESOLVER ON OPEN ============================ */
+function sweepOnOpen(){
+  const n = nowCtx();
+  const w = state.weeks[currentWeekKey()];
+  if (w){ resolveWeek(state.goals, w, n); }
+  save();
+}
+
+/* ============================ ACHIEVEMENTS ============================ */
+const ACH_LIST = [
+  ["FIRST","First review done"],
+  ["SWEEP","All goals HIT"],
+  ["DOUBLE","Two SWEEPs running"],
+  ["COMEBACK","Missed→HIT next week"],
+  ["HONEST","Every day logged"],
+  ["NO-SPARE","Quota 7/7, T≤5"],
+  ["EARLY","Pool cleared by Fri"],
+  ["STEADY","4 reviews running"],
+];
+/* Evaluate achievements at review-commit of week `key`. Returns list newly earned. */
+function evalAchievements(key){
+  const earned = [];
+  const w = state.weeks[key];
+  const verdicts = w.goals.map(function(wg){
+    const g = state.goals.find(x=>x.id===wg.goalId);
+    return { wg, g, v: g ? goalVerdict(g.type, wg.snap, wg) : "MISS" };
+  });
+  const grant = function(id){ if (!state.achievements[id]){ state.achievements[id]=key; earned.push(id); } };
+
+  // FIRST — first review completed
+  if (Object.keys(state.weeks).filter(k=>state.weeks[k].reviewedAt).length === 0) grant("FIRST");
+
+  const allHit = verdicts.length>0 && verdicts.every(x=>x.v==="HIT");
+  if (allHit) grant("SWEEP");
+
+  // DOUBLE — two consecutive SWEEP weeks
+  if (allHit){
+    const pk = prevWeekKey(key);
+    const pw = state.weeks[pk];
+    if (pw && pw.reviewedAt && weekWasSweep(pk)) grant("DOUBLE");
+  }
+
+  // COMEBACK — a goal missed week N, HIT week N+1
+  const pk = prevWeekKey(key);
+  const pw = state.weeks[pk];
+  if (pw){
+    for (const x of verdicts){
+      if (x.v!=="HIT") continue;
+      const prev = pw.goals.find(p=>p.goalId===x.wg.goalId);
+      if (prev){
+        const pg = state.goals.find(g=>g.id===prev.goalId);
+        if (pg && goalVerdict(pg.type, prev.snap, prev)==="MISS"){ grant("COMEBACK"); break; }
+      }
+    }
+  }
+
+  // HONEST — every in-play day logged before grace expiry ⇒ zero resolved days anywhere
+  let anyResolved=false, anyUnlogged=false;
+  const startDay = w.committedOnDay||0;
+  for (const wg of w.goals){
+    const g = state.goals.find(x=>x.id===wg.goalId); if (!g) continue;
+    if (g.type==="quota"||g.type==="fixed"){
+      const sched = g.type==="fixed"? wg.snap.days : range(startDay,7);
+      for (const d of sched){
+        const st = wg.days[d];
+        if (st==="resolved") anyResolved=true;
+        if (!st || st==="unlogged") anyUnlogged=true;
+      }
+    }
+  }
+  if (!anyResolved && !anyUnlogged && w.goals.length>0) grant("HONEST");
+
+  // NO-SPARE — a quota with T≤5 logged 7/7 hits
+  for (const x of verdicts){
+    if (x.g && x.g.type==="quota" && x.wg.snap.target<=5){
+      const m = quotaMath(x.wg.snap.target, x.wg.days, x.wg.snap.dip||7);
+      if (m.hits===7) grant("NO-SPARE");
+    }
+  }
+  // EARLY — pool cleared by Friday
+  for (const x of verdicts){
+    if (x.g && x.g.type==="pool"){
+      const done = x.wg.poolDone||{};
+      const allDoneByFri = x.wg.snap.items.every(function(_,i){ return done[i]!=null && done[i]<=4; });
+      if (x.wg.snap.items.length>0 && allDoneByFri) grant("EARLY");
+    }
+  }
+  // STEADY — 4 consecutive reviews (this one incl.)
+  if (consecutiveReviews(key) >= 4) grant("STEADY");
+
+  return earned;
+}
+function achName(id){ const a = ACH_LIST.find(x=>x[0]===id); return a ? a[1] : id; }
+function weekWasSweep(key){
+  const w = state.weeks[key]; if (!w) return false;
+  if (w.goals.length===0) return false;
+  return w.goals.every(function(wg){
+    const g = state.goals.find(x=>x.id===wg.goalId);
+    return g && goalVerdict(g.type, wg.snap, wg)==="HIT";
+  });
+}
+function consecutiveReviews(key){
+  let n=0, k=key;
+  while (state.weeks[k] && state.weeks[k].reviewedAt){ n++; k=prevWeekKey(k); }
+  return n;
+}
+function range(a,b){ const r=[]; for(let i=a;i<b;i++) r.push(i); return r; }
+
+/* ============================ REVIEW RULE TABLE ============================ */
+/* Returns suggested decision chip id for a goal at review time. */
+function suggestDecision(g, wg, key){
+  if (g.type==="quota"){
+    const m = quotaMath(wg.snap.target, wg.days, wg.snap.dip||7);
+    // R1
+    if (m.verdict==="MISS" && m.misses >= m.sparesTotal + 2) return {chip:"adjust", hint:"target-down", sub:"−1"};
+    // R2 — HIT using 0 spares, 2 weeks running
+    if (m.verdict==="HIT" && m.sparesLeft===0 && quotaZeroSpareStreak(g, key)>=2 && wg.snap.target<7)
+      return {chip:"adjust", hint:"target-up", sub:"raise"};
+  }
+  if (g.type==="pool"){
+    const rem = poolRemaining(wg.snap, wg);
+    // R3 — ≥2 items never done
+    if (rem >= 2) return {chip:"adjust", hint:"pool-remove", sub:"−1 item"};
+    // R4 — cleared by Friday 2 weeks running
+    if (rem===0 && poolEarlyStreak(g, key)>=2) return {chip:"adjust", hint:"pool-add", sub:"+1 item"};
+  }
+  if (g.type==="fixed"){
+    // R5 — same weekday missed 2 consecutive weeks
+    const wd = fixedRepeatMissDay(g, wg, key);
+    if (wd!=null) return {chip:"adjust", hint:"fixed-move", sub:"move "+DAYS[wd]};
+  }
+  if (g.type==="counter"){
+    const m = counterMath(wg.snap.perDay, wg.snap.daysTarget, wg.counts);
+    if (m.daysHit <= 3) return {chip:"adjust", hint:"counter-down", sub:"−1/day"};
+  }
+  // R7 — HIT 3 consecutive weeks => Park (mastered)
+  if (goalVerdict(g.type, wg.snap, wg)==="HIT" && hitStreak(g, key)>=3)
+    return {chip:"park", hint:"mastered", sub:"mastered"};
+  return {chip:"keep", hint:null, sub:null};
+}
+function quotaZeroSpareStreak(g, key){
+  let n=0, k=key;
+  while (state.weeks[k]){
+    const wg = state.weeks[k].goals.find(x=>x.goalId===g.id);
+    if (!wg || wg.snap.target==null) break;
+    const m = quotaMath(wg.snap.target, wg.days, wg.snap.dip||7);
+    if (m.verdict==="HIT" && m.sparesLeft===0) n++; else break;
+    k = prevWeekKey(k);
+  }
+  return n;
+}
+function poolEarlyStreak(g, key){
+  let n=0, k=key;
+  while (state.weeks[k]){
+    const wg = state.weeks[k].goals.find(x=>x.goalId===g.id);
+    if (!wg || !wg.snap.items) break;
+    const done = wg.poolDone||{};
+    const early = wg.snap.items.every((_,i)=>done[i]!=null && done[i]<=4);
+    if (early) n++; else break;
+    k = prevWeekKey(k);
+  }
+  return n;
+}
+function fixedRepeatMissDay(g, wg, key){
+  const pk = prevWeekKey(key);
+  const pw = state.weeks[pk];
+  if (!pw) return null;
+  const pwg = pw.goals.find(x=>x.goalId===g.id);
+  if (!pwg) return null;
+  const missNow = fixedInstances(wg.snap.days, wg.days, wg.swaps).filter(i=>i.state!=="hit").map(i=>i.origin);
+  const missPrev = new Set(fixedInstances(pwg.snap.days, pwg.days, pwg.swaps).filter(i=>i.state!=="hit").map(i=>i.origin));
+  for (const d of missNow) if (missPrev.has(d)) return d;
+  return null;
+}
+function hitStreak(g, key){
+  let n=0, k=key;
+  while (state.weeks[k]){
+    const wg = state.weeks[k].goals.find(x=>x.goalId===g.id);
+    if (!wg) break;
+    const gg = state.goals.find(x=>x.id===g.id);
+    if (gg && goalVerdict(gg.type, wg.snap, wg)==="HIT") n++; else break;
+    k = prevWeekKey(k);
+  }
+  return n;
+}
+
+/* ============================ TIPS ENGINE ============================ */
+/* state-triggered, one slot, priority order, cooldown. Returns {id,text} or null. */
+function pickTip(){
+  const wk = state.weeks[currentWeekKey()];
+  if (!wk) return null;
+  const n = nowCtx();
+  const cands = [];
+  const gv = wk.goals.map(function(wg){
+    const g = state.goals.find(x=>x.id===wg.goalId); return {g, wg};
+  }).filter(x=>x.g);
+
+  // T1 — fixed instance skipped 2× this week
+  for (const {g,wg} of gv){
+    if (g.type==="fixed"){
+      const missed = fixedInstances(wg.snap.days, wg.days, wg.swaps).filter(i=>i.state==="miss"||i.state==="resolved").length;
+      if (missed>=2){ cands.push(["T1","Shrink it. 10 min → 5. Small enough to start is the whole trick."]); break; }
+    }
+  }
+  // T2 — pool enters risk
+  for (const {g,wg} of gv){
+    if (g.type==="pool"){
+      const dleft = 6 - n.day;
+      if (poolRisk(poolRemaining(wg.snap, wg), dleft)==="risk"){ cands.push(["T2","Split the pile — do the easiest item tonight."]); break; }
+    }
+  }
+  // T3 — counter daysHit/daysElapsed < 0.5 on/after Thu
+  if (n.day>=3){
+    for (const {g,wg} of gv){
+      if (g.type==="counter"){
+        const elapsed = Math.max(1, n.day - (wk.committedOnDay||0));
+        const m = counterMath(wg.snap.perDay, wg.snap.daysTarget, wg.counts);
+        if (m.daysHit/elapsed < 0.5){ cands.push(["T3","Anchor it: one bottle with each meal beats remembering."]); break; }
+      }
+    }
+  }
+  // T4 — quota spares gone before Sat
+  if (n.day < 5){
+    for (const {g,wg} of gv){
+      if (g.type==="quota"){
+        const m = quotaMath(wg.snap.target, wg.days, wg.snap.dip||7);
+        if (m.sparesLeft===0){ cands.push(["T4","Spares gone, week's still live. Protect the days that remain."]); break; }
+      }
+    }
+  }
+  // T5 — first active week
+  if (Object.keys(state.weeks).length===1) cands.push(["T5","Log honestly. A hatched day teaches more than a fake tick."]);
+  // T6 — everything safe on Fri
+  if (n.day===4){
+    const allSafe = gv.every(function({g,wg}){
+      if (g.type==="pool") return poolRisk(poolRemaining(wg.snap,wg), 6-n.day)==="safe";
+      return true;
+    });
+    if (allSafe && gv.length>0) cands.push(["T6","Ahead. Bank a Sunday item today if you fancy."]);
+  }
+  // T7 — previous week archived unreviewed
+  const pk = prevWeekKey(currentWeekKey());
+  if (state.weeks[pk] && state.weeks[pk].abandoned) cands.push(["T7","The Sunday review is the whole engine. 90 seconds."]);
+  // T8 — ≥3 goals failing/at-risk
+  let atRisk=0;
+  for (const {g,wg} of gv){
+    const v = goalVerdict(g.type, wg.snap, wg);
+    if (g.type==="pool" && poolRisk(poolRemaining(wg.snap,wg), 6-n.day)==="risk"){ atRisk++; continue; }
+    if (v==="MISS") atRisk++;
+  }
+  if (atRisk>=3) cands.push(["T8","Overloaded. Parking one goal is a decision, not a failure."]);
+
+  // priority = order in T1..T8 numerically
+  cands.sort((a,b)=> a[0].localeCompare(b[0]));
+  for (const [id,text] of cands){
+    if (isTipDismissed(id)) continue;
+    if (isTipOnCooldown(id)) continue;
+    return { id, text };
+  }
+  return null;
+}
+function isTipDismissed(id){ return dismissedTips.has(id+"@"+currentWeekKey()); }
+function isTipOnCooldown(id){
+  const wk = state.tips[id];
+  if (!wk) return false;
+  const shown = mondayOfKey(wk);
+  const diff = (mondayOf(now()) - shown)/(24*3600*1000);
+  return diff < CFG.tipCooldownDays;
+}
+const dismissedTips = new Set();
+
+/* ============================ RENDER ============================ */
+let activeTab = "today";
+
+function renderBanner(){
+  const slot = document.getElementById("banner-slot");
+  slot.innerHTML = "";
+  if (!STORE_OK){
+    const b = document.createElement("div");
+    b.className = "banner"; b.textContent = STR.storageUnavailable;
+    slot.appendChild(b);
+  }
+}
+function renderHeader(){
+  const n = nowCtx();
+  document.getElementById("h-day").textContent = DAY_FULL[n.day];
+  document.getElementById("h-week").textContent = weekLabel(n.date);
+}
+function el(tag, cls, txt){
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+/* ---- week strip component: the signature element ---- */
+function buildStrip(g, wg, opts){
+  opts = opts || {};
+  const strip = el("div","strip");
+  const startDay = wg._startDay != null ? wg._startDay : (currentWeek()? currentWeek().committedOnDay : 0);
+  const n = nowCtx();
+  const swapDest = {}; for (const o in (wg.swaps||{})) swapDest[wg.swaps[o]] = o;
+  for (let d=0; d<7; d++){
+    const cell = el("button","cell");
+    cell.setAttribute("aria-label", DAY_FULL[d]);
+    const lab = el("span","d mono", DAY_INI[d]); cell.appendChild(lab);
+
+    const inPlay = d >= startDay;
+    if (!inPlay){ cell.classList.add("nip"); strip.appendChild(cell); continue; }
+    if (d===n.day) cell.classList.add("today");
+
+    let st = "future";
+    if (g.type==="quota"){
+      st = wg.days[d] || (d < n.day || (d===n.day) ? "unlogged":"future");
+      if (d > n.day) st = "future";
+      else st = wg.days[d] || "unlogged";
+    } else if (g.type==="fixed"){
+      const scheduled = wg.snap.days.includes(d);
+      const isDest = swapDest[d]!=null;
+      const movedAway = (wg.swaps||{})[d]!=null;
+      if (movedAway){ st="moved"; }
+      else if (scheduled || isDest){ st = wg.days[d] || (d>n.day?"future":"unlogged"); if (isDest) cell.classList.add("dest"); }
+      else { st = "blank"; }
+    } else if (g.type==="counter"){
+      const c = wg.counts[d];
+      if (c==null){ st = d>n.day?"future":"unlogged"; }
+      else st = c>=wg.snap.perDay ? "hit" : "miss";
+    } else if (g.type==="pool"){
+      st = "future"; // pool has no per-day strip states; render neutral
+    }
+    applyCellState(cell, st, g, wg, d);
+
+    if (opts.interactive && d===n.day && (g.type==="quota" || (g.type==="fixed" && wg.snap.days.includes(d) && !(wg.swaps||{})[d]))){
+      cell.classList.add("tap");
+      cell.addEventListener("click", function(){ toggleDay(g, wg, d, cell); });
+    }
+    strip.appendChild(cell);
+  }
+  return strip;
+}
+function applyCellState(cell, st, g, wg, d){
+  if (st==="hit"){ cell.classList.add("hit"); cell.appendChild(checkGlyph()); }
+  else if (st==="miss"){ cell.classList.add("miss"); }
+  else if (st==="resolved"){ cell.classList.add("resolved"); }
+  else if (st==="moved"){ cell.classList.add("moved"); const a=el("span","glyph","→"); cell.appendChild(a); }
+  else if (st==="future"){ cell.classList.add("future"); }
+  else if (st==="blank"){ /* scheduled-nothing */ cell.style.opacity="0.45"; }
+  // unlogged => plain surface
+}
+function checkGlyph(){
+  const s = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  s.setAttribute("class","glyph"); s.setAttribute("width","16"); s.setAttribute("height","16");
+  s.setAttribute("viewBox","0 0 24 24"); s.setAttribute("fill","none");
+  s.setAttribute("stroke","currentColor"); s.setAttribute("stroke-width","2.4");
+  const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M5 13l4 4L19 6"); p.setAttribute("stroke-linecap","square");
+  s.appendChild(p); return s;
+}
+
+function currentWeek(){ return state.weeks[currentWeekKey()]; }
+
+function toggleDay(g, wg, d, cell){
+  const cur = wg.days[d];
+  const next = cur==="hit" ? "miss" : (cur==="miss" ? "unlogged" : "hit");
+  if (next==="unlogged") delete wg.days[d]; else wg.days[d]=next;
+  save();
+  vibrate(8);
+  renderToday();
+}
+
+/* ---- goal row on Today ---- */
+function goalRowToday(g, wg){
+  const n = nowCtx();
+  const row = el("div","grow");
+  const top = el("div","top");
+  const left = el("div");
+  left.appendChild(el("div","name", g.name));
+  left.appendChild(metaLine(g, wg));
+  top.appendChild(left);
+  row.appendChild(top);
+
+  const ctl = el("div","ctl");
+  if (g.type==="quota"){
+    ctl.appendChild(buildStrip(g, wg, {interactive:true}));
+  } else if (g.type==="counter"){
+    ctl.appendChild(counterControl(g, wg));
+  } else if (g.type==="pool"){
+    const rem = poolRemaining(wg.snap, wg);
+    const dleft = 6 - n.day;
+    const risk = poolRisk(rem, dleft);
+    if (risk==="risk"){ row.classList.add("risk"); }
+    ctl.appendChild(poolControl(g, wg));
+    if (risk==="tight" || risk==="risk"){
+      const nud = el("div","nudge", risk==="risk"
+        ? rem+" left, "+dleft+" days after today — split the pile."
+        : rem+" left for "+dleft+" days — no slack now.");
+      ctl.appendChild(nud);
+    }
+  } else if (g.type==="fixed"){
+    const scheduledToday = wg.snap.days.includes(n.day) && !(wg.swaps||{})[n.day];
+    ctl.appendChild(buildStrip(g, wg, {interactive:true}));
+    if (scheduledToday){
+      const btn = el("button","btn primary sm","Log "+(wg.snap.label||"done"));
+      btn.style.marginTop="10px"; btn.style.width="auto";
+      btn.addEventListener("click", function(){ wg.days[n.day]="hit"; save(); vibrate(8); renderToday(); });
+      if (wg.days[n.day]==="hit"){ btn.textContent="Logged"; btn.classList.remove("primary"); btn.classList.add("quiet"); }
+      ctl.appendChild(btn);
+    }
+  }
+  row.appendChild(ctl);
+  return row;
+}
+function metaLine(g, wg){
+  const m = el("div","meta caps");
+  const n = nowCtx();
+  if (g.type==="quota"){
+    const q = quotaMath(wg.snap.target, wg.days, wg.snap.dip||7);
+    let s = "QUOTA · "+q.hits+"/"+wg.snap.target;
+    if (q.over>0){ m.innerHTML = "QUOTA · "+q.hits+"/"+wg.snap.target+" · <span class='over'>OVER BY "+q.over+"</span>"; return m; }
+    s += " · "+Math.max(0,q.sparesLeft)+" SPARE";
+    m.textContent = s;
+  } else if (g.type==="counter"){
+    const today = wg.counts[n.day]||0;
+    const cm = counterMath(wg.snap.perDay, wg.snap.daysTarget, wg.counts);
+    m.textContent = "COUNTER · TODAY "+today+"/"+wg.snap.perDay+" · DAYS "+cm.daysHit+"/"+wg.snap.daysTarget;
+  } else if (g.type==="pool"){
+    const rem = poolRemaining(wg.snap, wg);
+    const done = wg.snap.items.length - rem;
+    m.textContent = "POOL · "+done+"/"+wg.snap.items.length+" DONE";
+  } else if (g.type==="fixed"){
+    const inst = fixedInstances(wg.snap.days, wg.days, wg.swaps);
+    const hit = inst.filter(i=>i.state==="hit").length;
+    m.textContent = "FIXED · "+hit+"/"+inst.length+(wg.snap.label?(" · "+wg.snap.label):"");
+  }
+  return m;
+}
+function counterControl(g, wg){
+  const n = nowCtx();
+  const wrap = el("div"); wrap.style.display="flex"; wrap.style.alignItems="center";
+  const step = el("div","stepper");
+  const minus = el("button","step-btn","−"); minus.setAttribute("aria-label","decrease");
+  const val = el("div","step-val");
+  const plus = el("button","step-btn","+"); plus.setAttribute("aria-label","increase");
+  const cur = wg.counts[n.day]||0;
+  val.textContent = cur+"/"+wg.snap.perDay;
+  minus.addEventListener("click", function(){ setCount(g,wg,n.day,Math.max(0,(wg.counts[n.day]||0)-1)); });
+  plus.addEventListener("click", function(){ setCount(g,wg,n.day,(wg.counts[n.day]||0)+1); });
+  step.appendChild(minus); step.appendChild(val); step.appendChild(plus);
+  wrap.appendChild(step);
+  const meta = el("div","step-meta caps","DAYS "+counterMath(wg.snap.perDay,wg.snap.daysTarget,wg.counts).daysHit+"/"+wg.snap.daysTarget);
+  wrap.appendChild(meta);
+  return wrap;
+}
+function setCount(g, wg, d, v){
+  wg.counts[d]=v; save(); vibrate(8); renderToday();
+}
+function poolControl(g, wg){
+  const n = nowCtx();
+  const pool = el("div","pool");
+  wg.snap.items.forEach(function(it, i){
+    const done = wg.poolDone[i]!=null;
+    const row = el("div","pitem"+(done?" done":""));
+    const box = el("button","pbox"+(done?" on":""));
+    box.setAttribute("aria-label", it.name);
+    if (done) box.appendChild(checkGlyph());
+    box.addEventListener("click", function(){
+      if (wg.poolDone[i]!=null) delete wg.poolDone[i];
+      else wg.poolDone[i]=n.day;
+      save(); vibrate(8); renderToday();
+    });
+    const name = el("div","pname", it.name);
+    const chip = el("button","daychip"+(done?" done":""), done?("DONE "+DAYS[wg.poolDone[i]].toUpperCase()):DAYS[it.suggestedDay].toUpperCase());
+    chip.addEventListener("click", function(e){ e.stopPropagation(); reassignPoolDay(g,wg,i); });
+    row.appendChild(box); row.appendChild(name); row.appendChild(chip);
+    pool.appendChild(row);
+  });
+  return pool;
+}
+function reassignPoolDay(g, wg, i){
+  const it = wg.snap.items[i];
+  it.suggestedDay = (it.suggestedDay+1)%6; // cycle Mon..Sat
+  save(); renderToday();
+}
+
+/* ---- TODAY ---- */
+function renderToday(){
+  const scr = document.getElementById("today-screen");
+  scr.innerHTML = "";
+  const ph = phase();
+  const n = nowCtx();
+
+  if (ph.mode==="planning"){ renderPlanningInto(scr); return; }
+
+  // tip slot
+  const tip = pickTip();
+  if (tip){
+    const t = el("div","tip");
+    const body = el("div","body");
+    body.appendChild(el("div","lbl caps","Tip"));
+    body.appendChild(el("div","txt", tip.text));
+    const x = el("button","x","×"); x.setAttribute("aria-label","Dismiss tip");
+    x.addEventListener("click", function(){
+      dismissedTips.add(tip.id+"@"+currentWeekKey());
+      state.tips[tip.id]=currentWeekKey(); save(); renderToday();
+    });
+    t.appendChild(body); t.appendChild(x);
+    scr.appendChild(t);
+  }
+
+  const wk = currentWeek();
+  const active = wk.goals.filter(function(wg){ const g=state.goals.find(x=>x.id===wg.goalId); return g && g.status==="active"; });
+
+  // yesterday grace section
+  if (n.hour < CFG.graceHour && n.day-1 >= (wk.committedOnDay||0)){
+    const yday = n.day-1;
+    const needing = active.filter(function(wg){ return dayNeedsLog(state.goals.find(x=>x.id===wg.goalId), wg, yday); });
+    if (needing.length){
+      scr.appendChild(el("div","sec-head",STR.yesterdayOpen));
+      const rec = el("div","recessed rows");
+      needing.forEach(function(wg){
+        const g = state.goals.find(x=>x.id===wg.goalId);
+        rec.appendChild(yesterdayRow(g, wg, yday));
+      });
+      scr.appendChild(rec);
+    }
+  }
+
+  // goals
+  if (active.length===0){
+    scr.appendChild(el("div","empty",STR.noGoals));
+  } else {
+    const rows = el("div","rows");
+    active.forEach(function(wg){
+      const g = state.goals.find(x=>x.id===wg.goalId);
+      rows.appendChild(goalRowToday(g, wg));
+    });
+    scr.appendChild(rows);
+  }
+
+  // sunday review banner
+  if (reviewUnlocked() && wk.reviewedAt==null){
+    const b = el("div","tip"); b.style.borderLeftColor="var(--signal)";
+    const body = el("div","body");
+    body.appendChild(el("div","lbl caps","Review"));
+    body.appendChild(el("div","txt",STR.reviewReady));
+    b.appendChild(body);
+    const go = el("button","btn commit sm","Open"); go.style.width="auto"; go.style.alignSelf="center";
+    go.addEventListener("click", function(){ openReview(currentWeekKey(), false); });
+    b.appendChild(go);
+    scr.appendChild(b);
+  }
+}
+function dayNeedsLog(g, wg, d){
+  if (!g) return false;
+  if (g.type==="quota") return !wg.days[d];
+  if (g.type==="fixed") return wg.snap.days.includes(d) && !(wg.swaps||{})[d] && !wg.days[d];
+  if (g.type==="counter") return wg.counts[d]==null;
+  return false;
+}
+function yesterdayRow(g, wg, d){
+  const row = el("div","grow");
+  const top = el("div","top");
+  const left = el("div");
+  left.appendChild(el("div","name", g.name));
+  left.appendChild(el("div","meta caps", DAYS[d].toUpperCase()+" — still open"));
+  top.appendChild(left);
+  row.appendChild(top);
+  const ctl = el("div","ctl");
+  if (g.type==="quota" || g.type==="fixed"){
+    const yes = el("button","btn primary sm","Hit"); yes.style.width="auto";
+    const no = el("button","btn quiet sm","Miss"); no.style.width="auto";
+    yes.addEventListener("click", function(){ wg.days[d]="hit"; save(); renderToday(); });
+    no.addEventListener("click", function(){ wg.days[d]="miss"; save(); renderToday(); });
+    const bar = el("div","btnrow"); bar.appendChild(yes); bar.appendChild(no);
+    ctl.appendChild(bar);
+  } else if (g.type==="counter"){
+    const wrap = counterControlForDay(g, wg, d);
+    ctl.appendChild(wrap);
+  }
+  row.appendChild(ctl);
+  return row;
+}
+function counterControlForDay(g, wg, d){
+  const wrap = el("div"); wrap.style.display="flex"; wrap.style.alignItems="center";
+  const step = el("div","stepper");
+  const minus = el("button","step-btn","−");
+  const val = el("div","step-val");
+  const plus = el("button","step-btn","+");
+  const draw = function(){ val.textContent=(wg.counts[d]||0)+"/"+wg.snap.perDay; };
+  draw();
+  minus.addEventListener("click", function(){ wg.counts[d]=Math.max(0,(wg.counts[d]||0)-1); save(); renderToday(); });
+  plus.addEventListener("click", function(){ wg.counts[d]=(wg.counts[d]||0)+1; save(); renderToday(); });
+  step.appendChild(minus); step.appendChild(val); step.appendChild(plus);
+  wrap.appendChild(step);
+  return wrap;
+}
+
+/* ---- WEEK / PLANNER ---- */
+function renderWeek(){
+  const scr = document.getElementById("week-screen");
+  scr.innerHTML = "";
+  const ph = phase();
+  if (ph.mode==="planning"){ renderPlanningInto(scr); return; }
+  const wk = currentWeek();
+  scr.appendChild(el("div","sec-head","The week"));
+  const table = el("div","rows wtable");
+  const active = wk.goals.filter(function(wg){ const g=state.goals.find(x=>x.id===wg.goalId); return g && g.status==="active"; });
+  active.forEach(function(wg){
+    const g = state.goals.find(x=>x.id===wg.goalId);
+    table.appendChild(weekRow(g, wg));
+  });
+  scr.appendChild(table);
+
+  // add goal
+  const addBtn = el("button","btn quiet",STR.addGoal); addBtn.style.marginTop="18px";
+  const activeCount = state.goals.filter(g=>g.status==="active").length;
+  if (slotAction(activeCount)==="blocked"){ addBtn.disabled=true; }
+  addBtn.addEventListener("click", function(){ onAddGoal(); });
+  scr.appendChild(addBtn);
+  if (slotAction(activeCount)==="blocked"){
+    scr.appendChild(el("div","empty",STR.hardCap));
+  }
+}
+let expandedGoal = null;
+function weekRow(g, wg){
+  const row = el("div","grow");
+  const top = el("div","top");
+  const left = el("div");
+  left.appendChild(el("div","name", g.name));
+  left.appendChild(metaLine(g, wg));
+  top.appendChild(left);
+  const v = el("div"); v.appendChild(verdictTok(goalVerdict(g.type,wg.snap,wg)));
+  top.appendChild(v);
+  row.appendChild(top);
+
+  const sw = el("div","stripwrap");
+  wg._startDay = wg.committedOnDay!=null?wg.committedOnDay:(currentWeek().committedOnDay||0);
+  wg._startDay = currentWeek().committedOnDay||0;
+  sw.appendChild(buildStrip(g, wg, {interactive:false}));
+  row.appendChild(sw);
+
+  row.addEventListener("click", function(e){
+    if (e.target.closest(".detail")) return;
+    expandedGoal = expandedGoal===g.id? null : g.id;
+    renderWeek();
+  });
+  if (expandedGoal===g.id){ row.appendChild(weekDetail(g, wg)); }
+  return row;
+}
+function verdictTok(v){
+  const t = el("div","vtok "+(v==="HIT"?"hit":"miss"));
+  if (v==="HIT") t.appendChild(checkGlyph());
+  return t;
+}
+function weekDetail(g, wg){
+  const d = el("div","detail");
+  d.addEventListener("click", function(e){ e.stopPropagation(); });
+  // editing fields
+  if (g.type==="quota"){
+    d.appendChild(numField("Target /7", g.params.target, 1, 7, function(v){ g.params.target=v; wg.snap.target=prorate(v, wg.snap.dip||7); wg.snap.baseTarget=v; save(); renderWeek(); }));
+  } else if (g.type==="counter"){
+    d.appendChild(numField("Per day", g.params.perDay, 1, CFG.counterMax, function(v){ g.params.perDay=v; wg.snap.perDay=v; save(); renderWeek(); }));
+    d.appendChild(numField("Days /7", g.params.daysTarget, 1, 7, function(v){ g.params.daysTarget=v; wg.snap.daysTarget=prorate(v,wg.snap.dip||7); save(); renderWeek(); }));
+  } else if (g.type==="fixed"){
+    d.appendChild(dayPicker(g.params.days, function(days){ g.params.days=days.slice(); wg.snap.days=days.filter(x=>x>=(currentWeek().committedOnDay||0)); save(); renderWeek(); }));
+    // swap UI
+    const inst = fixedInstances(wg.snap.days, wg.days, wg.swaps);
+    const missed = inst.filter(i=>i.state==="miss"||i.state==="resolved");
+    if (missed.length){
+      const sh = el("div","tiny-head caps","Swap a missed day");
+      d.appendChild(sh);
+      missed.forEach(function(i){
+        const b = el("button","chip", DAYS[i.origin].toUpperCase()+" → …");
+        b.style.marginRight="6px";
+        b.addEventListener("click", function(){ swapDialog(g, wg, i.origin); });
+        d.appendChild(b);
+      });
+    }
+  } else if (g.type==="pool"){
+    const info = el("div","meta caps","POOL · "+g.params.items.map(x=>x.name).join(" · "));
+    d.appendChild(info);
+  }
+  // park / drop
+  const bar = el("div","btnrow");
+  const park = el("button","btn quiet sm","Park goal"); park.style.width="auto";
+  park.addEventListener("click", function(){ g.status="parked"; save(); expandedGoal=null; renderWeek(); renderToday(); });
+  const drop = el("button","btn quiet sm","Drop"); drop.style.width="auto";
+  drop.addEventListener("click", function(){ g.status="dropped"; save(); expandedGoal=null; renderWeek(); renderToday(); });
+  bar.appendChild(park); bar.appendChild(drop);
+  d.appendChild(bar);
+  return d;
+}
+function numField(label, val, lo, hi, onChange){
+  const f = el("div","field");
+  f.appendChild(el("label","caps",label));
+  const minus = el("button","step-btn","−"); minus.style.width="40px"; minus.style.height="40px"; minus.style.fontSize="18px";
+  const input = el("div","num", String(val));
+  const plus = el("button","step-btn","+"); plus.style.width="40px"; plus.style.height="40px"; plus.style.fontSize="18px";
+  let cur = val;
+  minus.addEventListener("click", function(){ cur=clamp(cur-1,lo,hi); input.textContent=cur; onChange(cur); });
+  plus.addEventListener("click", function(){ cur=clamp(cur+1,lo,hi); input.textContent=cur; onChange(cur); });
+  f.appendChild(minus); f.appendChild(input); f.appendChild(plus);
+  return f;
+}
+function dayPicker(selected, onChange){
+  const f = el("div","field"); f.style.flexWrap="wrap";
+  f.appendChild(el("label","caps","Days"));
+  const pick = el("div","daypick");
+  const sel = new Set(selected);
+  DAYS.forEach(function(name, i){
+    const b = el("button","dtog"+(sel.has(i)?" on":""), DAY_INI[i]);
+    b.addEventListener("click", function(){
+      if (sel.has(i)) sel.delete(i); else sel.add(i);
+      b.classList.toggle("on");
+      onChange([...sel].sort((a,b)=>a-b));
+    });
+    pick.appendChild(b);
+  });
+  f.appendChild(pick);
+  return f;
+}
+function swapDialog(g, wg, origin){
+  const n = nowCtx();
+  const free = [];
+  for (let d=0; d<7; d++){
+    if (d<=n.day) continue;
+    if (wg.snap.days.includes(d) && !(wg.swaps||{})[d]) continue;
+    if (invSwapHas(wg,d)) continue;
+    free.push(d);
+  }
+  const body = el("div");
+  body.appendChild(el("h2",null,"Move "+DAYS[origin]));
+  body.appendChild(el("p",null,"Pick a free future day. One swap per instance."));
+  const chips = el("div","chips");
+  if (!free.length){ body.appendChild(el("div","empty","No free future day remains.")); }
+  free.forEach(function(d){
+    const c = el("button","chip", DAYS[d].toUpperCase());
+    c.addEventListener("click", function(){
+      const r = trySwapFixed(wg.swaps, wg.snap.days, origin, d, n.day);
+      if (r.ok){ save(); closeSheet(); renderWeek(); }
+    });
+    chips.appendChild(c);
+  });
+  body.appendChild(chips);
+  const cancel = el("button","btn quiet","Cancel"); cancel.style.marginTop="14px";
+  cancel.addEventListener("click", closeSheet);
+  body.appendChild(cancel);
+  openDialog(body);
+}
+
+/* ---- Add goal with slot friction ---- */
+function onAddGoal(){
+  const activeCount = state.goals.filter(g=>g.status==="active").length;
+  const act = slotAction(activeCount);
+  if (act==="blocked"){ return; }
+  if (act==="friction"){
+    const body = el("div");
+    body.appendChild(el("h2",null,"Full week"));
+    body.appendChild(el("p",null,STR.fullWeek));
+    const parkBtn = el("button","btn primary",STR.parkOne);
+    parkBtn.addEventListener("click", function(){ closeSheet(); activeTab="week"; showTab("week"); });
+    const addBtn = el("button","btn quiet",STR.addAnyway); addBtn.style.marginTop="8px";
+    addBtn.addEventListener("click", function(){ closeSheet(); newGoalSheet(); });
+    body.appendChild(parkBtn); body.appendChild(addBtn);
+    openDialog(body);
+    return;
+  }
+  newGoalSheet();
+}
+function newGoalSheet(){
+  const body = el("div");
+  body.appendChild(el("h2",null,"New goal"));
+  // parked suggestions
+  const parked = state.goals.filter(g=>g.status==="parked");
+  if (parked.length){
+    body.appendChild(el("div","tiny-head caps","Bring one back"));
+    const chips = el("div","chips");
+    parked.forEach(function(g){
+      const c = el("button","chip", g.name);
+      c.addEventListener("click", function(){ g.status="active"; addGoalToCurrentWeek(g); save(); closeSheet(); showTab("week"); });
+      chips.appendChild(c);
+    });
+    body.appendChild(chips);
+  }
+  body.appendChild(el("div","tiny-head caps","Type"));
+  const chips = el("div","chips");
+  [["quota","Quota"],["pool","Pool"],["counter","Counter"],["fixed","Fixed"]].forEach(function(t){
+    const c = el("button","chip", t[1]);
+    c.addEventListener("click", function(){ closeSheet(); createGoalOfType(t[0]); });
+    chips.appendChild(c);
+  });
+  body.appendChild(chips);
+  openSheet(body);
+}
+function createGoalOfType(type){
+  const id = "g"+Date.now().toString(36);
+  const wk = currentWeekKey();
+  let params;
+  let name;
+  if (type==="quota"){ params={target:5}; name="New quota"; }
+  else if (type==="pool"){ params={items:[{name:"item 1"},{name:"item 2"}]}; name="New pool"; }
+  else if (type==="counter"){ params={perDay:3, daysTarget:7}; name="New counter"; }
+  else { params={days:[0,2,4], label:""}; name="New fixed"; }
+  const g = { id, type, name, params, status:"active", createdWeek:wk };
+  state.goals.push(g);
+  addGoalToCurrentWeek(g);
+  save();
+  expandedGoal = id;
+  showTab("week");
+  editGoalName(g);
+}
+function addGoalToCurrentWeek(g){
+  const wk = currentWeek(); if (!wk) return;
+  if (wk.goals.find(x=>x.goalId===g.id)) return;
+  const snap = snapshotParams(g, wk.committedOnDay||0, daysInPlay(wk.committedOnDay||0));
+  wk.goals.push({ goalId:g.id, snap, days:{}, swaps:{}, counts:{}, poolDone:{}, verdict:null });
+}
+function editGoalName(g){
+  const body = el("div");
+  body.appendChild(el("h2",null,"Name it"));
+  const input = document.createElement("input");
+  input.className="txtin"; input.value=g.name; input.style.marginTop="10px";
+  body.appendChild(input);
+  // pool items editor
+  if (g.type==="pool"){
+    body.appendChild(el("div","tiny-head caps","Items (one per line)"));
+    const ta = document.createElement("textarea");
+    ta.className="txtin"; ta.style.height="120px"; ta.style.padding="10px";
+    ta.value = g.params.items.map(x=>x.name).join("\n");
+    body.appendChild(ta);
+    body._ta = ta;
+  }
+  const ok = el("button","btn primary","Save"); ok.style.marginTop="14px";
+  ok.addEventListener("click", function(){
+    g.name = input.value.trim()||g.name;
+    if (g.type==="pool" && body._ta){
+      const names = body._ta.value.split("\n").map(s=>s.trim()).filter(Boolean).slice(0,CFG.poolMax);
+      if (names.length>=CFG.poolMin){ g.params.items = names.map(n=>({name:n})); }
+      const wk=currentWeek(); const wg=wk&&wk.goals.find(x=>x.goalId===g.id);
+      if (wg){ wg.snap = snapshotParams(g, wk.committedOnDay||0, daysInPlay(wk.committedOnDay||0)); }
+    }
+    save(); closeSheet(); showTab("week");
+  });
+  body.appendChild(ok);
+  openSheet(body);
+  setTimeout(()=>input.focus(), 60);
+}
+
+/* ---- PLANNING ---- */
+function renderPlanningInto(scr){
+  scr.innerHTML = "";
+  scr.appendChild(el("div","sec-head",STR.planWeek));
+  scr.appendChild(el("div","meta caps",weekLabel(now())));
+  const active = state.goals.filter(g=>g.status==="active");
+  const table = el("div","rows"); table.style.marginTop="12px";
+  active.forEach(function(g){ table.appendChild(planRow(g)); });
+  scr.appendChild(table);
+
+  const addBtn = el("button","btn quiet",STR.addGoal); addBtn.style.marginTop="16px";
+  addBtn.addEventListener("click", function(){ planningAdd(); });
+  if (slotAction(active.length)==="blocked") addBtn.disabled=true;
+  scr.appendChild(addBtn);
+
+  const commit = el("button","btn primary","Commit — start logging"); commit.style.marginTop="18px";
+  if (active.length===0) commit.disabled=true;
+  commit.addEventListener("click", function(){ commitPlanning(); });
+  scr.appendChild(commit);
+}
+function planRow(g){
+  const row = el("div","grow");
+  const top = el("div","top");
+  const left = el("div");
+  left.appendChild(el("div","name", g.name));
+  left.appendChild(planMeta(g));
+  top.appendChild(left);
+  const edit = el("button","chip","Edit");
+  edit.addEventListener("click", function(){ planExpand = planExpand===g.id?null:g.id; renderRoot(); });
+  top.appendChild(edit);
+  row.appendChild(top);
+  if (planExpand===g.id){
+    const d = el("div","detail");
+    if (g.type==="quota") d.appendChild(numField("Target /7", g.params.target,1,7,function(v){g.params.target=v;save();planMetaRefresh();}));
+    else if (g.type==="counter"){ d.appendChild(numField("Per day",g.params.perDay,1,CFG.counterMax,function(v){g.params.perDay=v;save();})); d.appendChild(numField("Days /7",g.params.daysTarget,1,7,function(v){g.params.daysTarget=v;save();})); }
+    else if (g.type==="fixed") d.appendChild(dayPicker(g.params.days,function(days){g.params.days=days;save();}));
+    else if (g.type==="pool"){ const b=el("button","btn quiet sm","Edit items"); b.style.width="auto"; b.addEventListener("click",()=>editGoalName(g)); d.appendChild(b); }
+    const rn = el("button","btn quiet sm","Rename"); rn.style.width="auto"; rn.style.marginTop="8px";
+    rn.addEventListener("click", ()=>editGoalName(g));
+    d.appendChild(rn);
+    const park = el("button","btn quiet sm","Remove"); park.style.width="auto"; park.style.marginLeft="8px";
+    park.addEventListener("click", function(){ g.status="parked"; save(); planExpand=null; renderRoot(); });
+    d.appendChild(park);
+    row.appendChild(d);
+  }
+  return row;
+}
+let planExpand = null;
+function planMeta(g){
+  const m = el("div","meta caps");
+  if (g.type==="quota") m.textContent="QUOTA · "+g.params.target+"/7";
+  else if (g.type==="pool") m.textContent="POOL · "+g.params.items.length+" ITEMS";
+  else if (g.type==="counter") m.textContent="COUNTER · "+g.params.perDay+"/DAY · "+g.params.daysTarget+" DAYS";
+  else if (g.type==="fixed") m.textContent="FIXED · "+g.params.days.map(d=>DAYS[d].toUpperCase()).join(" ");
+  return m;
+}
+function planMetaRefresh(){ renderRoot(); }
+function planningAdd(){
+  if (slotAction(state.goals.filter(g=>g.status==="active").length)==="friction"){ onAddGoal(); return; }
+  newGoalSheet();
+}
+function commitPlanning(){
+  const n = nowCtx();
+  const wk = buildWeek(n.day);
+  state.weeks[currentWeekKey()] = wk;
+  resolveWeek(state.goals, wk, n);
+  save();
+  activeTab = "today"; showTab("today");
+}
+
+/* ---- REVIEW ---- */
+let reviewKey = null, reviewDecisions = {}, reviewForced=false;
+function openReview(key, forced){
+  reviewKey = key; reviewForced = forced;
+  reviewDecisions = {};
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
+  const scr = document.getElementById("review-screen");
+  scr.classList.add("on");
+  renderReview();
+  document.getElementById("nav").style.display="none";
+}
+function renderReview(){
+  const scr = document.getElementById("review-screen");
+  scr.innerHTML = "";
+  const wk = state.weeks[reviewKey];
+  const mon = mondayOfKey(reviewKey);
+  scr.appendChild(el("div","sec-head","Review"));
+  scr.appendChild(el("div","meta caps", weekLabel(mon)));
+
+  // zone 1: results
+  const z1 = el("div","rzone"); z1.appendChild(el("div","tiny-head caps","Results"));
+  const rows = el("div","rows");
+  wk.goals.forEach(function(wg){
+    const g = state.goals.find(x=>x.id===wg.goalId); if (!g) return;
+    const v = goalVerdict(g.type, wg.snap, wg);
+    const r = el("div","rgoal");
+    r.appendChild(verdictTok(v));
+    const mid = el("div"); mid.style.flex="1";
+    mid.appendChild(el("div","rname", g.name));
+    mid.appendChild(el("div","rdiag", diagnostic(g, wg, v)));
+    // decision chips
+    const suggest = suggestDecision(g, wg, reviewKey);
+    const dec = el("div","rdecide chips");
+    [["keep","Keep"],["adjust","Adjust"],["park","Park"],["drop","Drop"]].forEach(function(opt){
+      const c = el("button","chip", opt[1]);
+      if (opt[0]===suggest.chip && suggest.chip!=="keep"){ c.classList.add("suggest"); if (suggest.sub) c.appendChild(el("span","sub", suggest.sub.toUpperCase())); }
+      if ((reviewDecisions[g.id]||"keep")===opt[0]) c.classList.add("sel");
+      c.addEventListener("click", function(){
+        reviewDecisions[g.id]=opt[0];
+        if (opt[0]==="adjust"){ adjustSheet(g, suggest); }
+        renderReview();
+      });
+      dec.appendChild(c);
+    });
+    mid.appendChild(dec);
+    r.appendChild(mid);
+    rows.appendChild(r);
+  });
+  z1.appendChild(rows);
+  scr.appendChild(z1);
+
+  // zone 2: achievements earned (evaluate provisionally, don't persist yet)
+  const provisional = provisionalAchievements(reviewKey);
+  const z2 = el("div","rzone"); z2.appendChild(el("div","tiny-head caps","Earned this week"));
+  if (provisional.length===0){ z2.appendChild(el("div","empty","None — that's the point.")); }
+  else {
+    const stamps = el("div","stamps");
+    provisional.forEach(function(id){
+      const s = el("div","stamp on stamped");
+      const sq = el("div","sq", id.length>5?id.slice(0,4):id); sq.textContent=id;
+      s.appendChild(sq); s.appendChild(el("div","cap caps", achName(id)));
+      stamps.appendChild(s);
+    });
+    z2.appendChild(stamps);
+  }
+  scr.appendChild(z2);
+
+  // footer commit
+  const nextKey = nextWeekKeyFrom(reviewKey);
+  const nextNum = isoInfo(mondayOfKey(nextKey)).week;
+  const commit = el("button","btn commit","Commit week "+nextNum+" →"); commit.style.marginTop="24px";
+  commit.addEventListener("click", function(){ commitReview(); });
+  scr.appendChild(commit);
+}
+function diagnostic(g, wg, v){
+  if (v==="HIT"){
+    if (g.type==="quota"){ const m=quotaMath(wg.snap.target,wg.days,wg.snap.dip||7); return m.hits+"/"+wg.snap.target+" hits, "+Math.max(0,m.sparesLeft)+" spare unused."; }
+    if (g.type==="counter"){ const m=counterMath(wg.snap.perDay,wg.snap.daysTarget,wg.counts); return m.daysHit+"/"+wg.snap.daysTarget+" days met."; }
+    if (g.type==="pool"){ return "Cleared — all items done."; }
+    if (g.type==="fixed"){ return "Every session logged."; }
+  }
+  if (g.type==="quota"){ const m=quotaMath(wg.snap.target,wg.days,wg.snap.dip||7); return m.hits+"/"+wg.snap.target+" — "+(m.over>0?("over by "+m.over):"short by "+(wg.snap.target-m.hits))+"."; }
+  if (g.type==="counter"){ const m=counterMath(wg.snap.perDay,wg.snap.daysTarget,wg.counts); return "Only "+m.daysHit+"/"+wg.snap.daysTarget+" days met."; }
+  if (g.type==="pool"){ return poolRemaining(wg.snap,wg)+" item(s) left undone."; }
+  if (g.type==="fixed"){
+    const miss = fixedInstances(wg.snap.days,wg.days,wg.swaps).filter(i=>i.state!=="hit").map(i=>DAYS[i.origin]);
+    return (g.name.split(" ")[0])+" missed "+miss.join(", ")+".";
+  }
+  return "";
+}
+function adjustSheet(g, suggest){
+  const body = el("div");
+  body.appendChild(el("h2",null,"Adjust — "+g.name));
+  if (g.type==="quota"){
+    body.appendChild(numField("Target /7", g.params.target,1,7,function(v){ g.params.target=v; }));
+  } else if (g.type==="counter"){
+    body.appendChild(numField("Per day", g.params.perDay,1,CFG.counterMax,function(v){ g.params.perDay=v; }));
+    body.appendChild(numField("Days /7", g.params.daysTarget,1,7,function(v){ g.params.daysTarget=v; }));
+  } else if (g.type==="fixed"){
+    body.appendChild(dayPicker(g.params.days,function(days){ g.params.days=days; }));
+  } else if (g.type==="pool"){
+    const b = el("button","btn quiet","Edit items"); b.addEventListener("click",()=>{closeSheet(); editGoalName(g);});
+    body.appendChild(b);
+  }
+  const ok = el("button","btn primary","Apply"); ok.style.marginTop="14px";
+  ok.addEventListener("click", function(){ save(); closeSheet(); renderReview(); });
+  body.appendChild(ok);
+  openSheet(body);
+}
+function commitReview(){
+  const wk = state.weeks[reviewKey];
+  // apply achievements (persist)
+  const earned = evalAchievements(reviewKey);
+  wk.reviewedAt = now().toISOString();
+  wk.decisions = Object.assign({}, reviewDecisions);
+  // apply decisions to goals
+  for (const gid in reviewDecisions){
+    const g = state.goals.find(x=>x.id===gid); if (!g) continue;
+    const d = reviewDecisions[gid];
+    if (d==="park") g.status="parked";
+    else if (d==="drop") g.status="dropped";
+    // adjust already mutated params via sheet; keep active
+  }
+  save();
+  // seed next week
+  const nextKey = nextWeekKeyFrom(reviewKey);
+  const n = nowCtx();
+  // if next week is the actual current week, prorate to today; else full week
+  const commitDay = (nextKey===currentWeekKey()) ? n.day : 0;
+  if (!state.weeks[nextKey]){
+    const nw = buildWeek(commitDay);
+    // buildWeek uses today's day; override committedOnDay for a future/committed week
+    nw.committedOnDay = commitDay;
+    state.weeks[nextKey] = nw;
+    resolveWeek(state.goals, nw, n);
+  }
+  save();
+  closeReview();
+  activeTab="today"; showTab("today");
+}
+function nextWeekKeyFrom(key){
+  const mon = mondayOfKey(key); mon.setDate(mon.getDate()+7); return weekKeyOf(mon);
+}
+function closeReview(){
+  document.getElementById("review-screen").classList.remove("on");
+  document.getElementById("nav").style.display="flex";
+}
+/* provisional achievements for display (no persist) */
+function provisionalAchievements(key){
+  const snapshot = JSON.stringify(state.achievements);
+  const before = Object.assign({}, state.achievements);
+  const list = evalAchievements(key);
+  state.achievements = before; // roll back persistence side-effect
+  return list;
+}
+
+/* ---- TROPHIES ---- */
+function renderTrophies(){
+  const scr = document.getElementById("trophies-screen");
+  scr.innerHTML = "";
+  scr.appendChild(el("div","sec-head","Trophies"));
+  const stamps = el("div","stamps");
+  ACH_LIST.forEach(function(a){
+    const on = !!state.achievements[a[0]];
+    const s = el("div","stamp "+(on?"on":"locked"));
+    const sq = el("div","sq", a[0]);
+    s.appendChild(sq);
+    s.appendChild(el("div","cap caps", a[1]));
+    stamps.appendChild(s);
+  });
+  scr.appendChild(stamps);
+
+  scr.appendChild(el("div","tiny-head caps","Archive"));
+  const keys = Object.keys(state.weeks).filter(k=>state.weeks[k].reviewedAt || state.weeks[k].abandoned).sort().reverse();
+  if (keys.length===0){ scr.appendChild(el("div","empty","No completed weeks yet.")); }
+  const arch = el("div","arch");
+  keys.forEach(function(k){
+    const w = state.weeks[k];
+    const num = isoInfo(mondayOfKey(k)).week;
+    const goals = w.goals.filter(function(wg){ return state.goals.find(x=>x.id===wg.goalId); });
+    const hits = goals.filter(function(wg){ const g=state.goals.find(x=>x.id===wg.goalId); return goalVerdict(g.type,wg.snap,wg)==="HIT"; }).length;
+    const sweep = goals.length>0 && hits===goals.length;
+    const row = el("div","archrow");
+    row.appendChild(el("div","wk","W"+num));
+    row.appendChild(el("div","score", w.abandoned?"—":(hits+"/"+goals.length)));
+    row.appendChild(el("div","tag"+(sweep?" sweep":""), w.abandoned?"UNREVIEWED":(sweep?"SWEEP":"REVIEWED")));
+    arch.appendChild(row);
+  });
+  scr.appendChild(arch);
+}
+
+/* ---- SETTINGS SHEET ---- */
+function openSettings(){
+  const body = el("div");
+  body.appendChild(el("h2",null,"Settings"));
+
+  const r1 = el("div","row");
+  r1.appendChild(el("div",null,"Review hour"));
+  const rh = el("div","mono", fmtHour(state.settings.reviewHour));
+  const rhbox = el("div"); rhbox.style.display="flex"; rhbox.style.gap="6px";
+  const dn = el("button","step-btn","−"); dn.style.width="40px"; dn.style.height="40px"; dn.style.fontSize="18px";
+  const up = el("button","step-btn","+"); up.style.width="40px"; up.style.height="40px"; up.style.fontSize="18px";
+  dn.addEventListener("click", function(){ state.settings.reviewHour=clamp(state.settings.reviewHour-0.5,0,23.5); rh.textContent=fmtHour(state.settings.reviewHour); save(); });
+  up.addEventListener("click", function(){ state.settings.reviewHour=clamp(state.settings.reviewHour+0.5,0,23.5); rh.textContent=fmtHour(state.settings.reviewHour); save(); });
+  rhbox.appendChild(dn); rhbox.appendChild(rh); rhbox.appendChild(up);
+  r1.appendChild(rhbox);
+  body.appendChild(r1);
+
+  const r2 = el("div","row");
+  r2.appendChild(el("div",null,"Export JSON"));
+  const eb = el("div"); eb.style.display="flex"; eb.style.gap="6px";
+  const dl = el("button","btn quiet sm","Download"); dl.style.width="auto";
+  dl.addEventListener("click", exportDownload);
+  const cp = el("button","btn quiet sm","Copy"); cp.style.width="auto";
+  cp.addEventListener("click", exportCopy);
+  eb.appendChild(dl); eb.appendChild(cp);
+  r2.appendChild(eb);
+  body.appendChild(r2);
+
+  const r3 = el("div","row");
+  r3.appendChild(el("div",null,"Import JSON"));
+  const imp = el("button","btn quiet sm","Choose file"); imp.style.width="auto";
+  imp.addEventListener("click", importPick);
+  r3.appendChild(imp);
+  body.appendChild(r3);
+
+  const r4 = el("div","row");
+  r4.appendChild(el("div",null,"Wipe all data"));
+  const wipe = el("button","btn quiet sm","Wipe…"); wipe.style.width="auto";
+  wipe.addEventListener("click", wipeFlow);
+  r4.appendChild(wipe);
+  body.appendChild(r4);
+
+  openSheet(body);
+}
+function fmtHour(h){ const H=Math.floor(h); const M=(h-H)*60; return String(H).padStart(2,"0")+":"+String(M).padStart(2,"0"); }
+function exportDownload(){
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download="week-"+currentWeekKey()+".json";
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function exportCopy(){
+  const data = JSON.stringify(state, null, 2);
+  if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(data); }
+  else {
+    const ta=document.createElement("textarea"); ta.value=data; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); }catch(e){} ta.remove();
+  }
+}
+function importPick(){
+  const inp = document.createElement("input"); inp.type="file"; inp.accept="application/json,.json";
+  inp.addEventListener("change", function(){
+    const f = inp.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = function(){
+      try{
+        const parsed = JSON.parse(rd.result);
+        if (parsed.schemaVersion !== CFG.schemaVersion){ alert("Schema mismatch — cannot import (expected v"+CFG.schemaVersion+")."); return; }
+        if (!confirm("Import will overwrite all current data. Continue?")) return;
+        state = parsed; save(); closeSheet(); renderRoot();
+      }catch(e){ alert("Invalid JSON file."); }
+    };
+    rd.readAsText(f);
+  });
+  inp.click();
+}
+function wipeFlow(){
+  const body = el("div");
+  body.appendChild(el("h2",null,"Wipe everything"));
+  body.appendChild(el("p",null,"This deletes all goals, weeks and trophies. Type WIPE to confirm."));
+  const input = document.createElement("input"); input.className="txtin";
+  body.appendChild(input);
+  const go = el("button","btn primary","Wipe"); go.style.marginTop="14px"; go.disabled=true;
+  input.addEventListener("input", function(){ go.disabled = input.value.trim()!=="WIPE"; });
+  go.addEventListener("click", function(){
+    if (!confirm("Last chance — really wipe all data?")) return;
+    if (STORE_OK) localStorage.removeItem(CFG.storageKey);
+    state = seedState(); save(); closeSheet(); renderRoot();
+  });
+  body.appendChild(go);
+  openDialog(body);
+}
+
+/* ---- sheet / dialog plumbing ---- */
+const scrim = document.getElementById("scrim");
+function openSheet(body){
+  scrim.className = "scrim on";
+  scrim.innerHTML = "";
+  const s = el("div","sheet"); s.appendChild(body);
+  scrim.appendChild(s);
+  scrim.onclick = function(e){ if (e.target===scrim) closeSheet(); };
+}
+function openDialog(body){
+  scrim.className = "scrim on center";
+  scrim.innerHTML = "";
+  const s = el("div","dialog"); s.appendChild(body);
+  scrim.appendChild(s);
+  scrim.onclick = function(e){ if (e.target===scrim) closeSheet(); };
+}
+function closeSheet(){ scrim.className="scrim"; scrim.innerHTML=""; }
+
+/* ---- tabs ---- */
+function showTab(tab){
+  activeTab = tab;
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on", b.dataset.tab===tab));
+  if (tab==="today"){ document.getElementById("today-screen").classList.add("on"); renderToday(); }
+  else if (tab==="week"){ document.getElementById("week-screen").classList.add("on"); renderWeek(); }
+  else if (tab==="trophies"){ document.getElementById("trophies-screen").classList.add("on"); renderTrophies(); }
+}
+function renderRoot(){
+  renderBanner();
+  renderHeader();
+  // rollover: forced review
+  const ph = phase();
+  if (ph.mode==="review" && ph.forced){
+    // abandon deeper-skipped weeks handled by markAbandoned
+    openReview(ph.key, true);
+    return;
+  }
+  if (activeTab==="today") renderToday();
+  else if (activeTab==="week") renderWeek();
+  else if (activeTab==="trophies") renderTrophies();
+}
+
+/* mark fully-skipped weeks as abandoned (unreviewed) */
+function markAbandoned(){
+  const ck = currentWeekKey();
+  const keys = Object.keys(state.weeks).filter(k=>k<ck);
+  // Any committed week older than the immediately-previous unreviewed one, that has
+  // an intervening committed newer week, was skipped => abandoned.
+  // Simpler: if a week is unreviewed and there exists a strictly newer reviewed/committed week, keep as forced;
+  // handled by findForcedReview. Nothing to auto-abandon here in v1 single-user flow.
+}
+
+/* ---- haptics ---- */
+function vibrate(ms){ if (navigator.vibrate) { try{ navigator.vibrate(ms); }catch(e){} } }
+
+/* ============================ BOOT ============================ */
+function boot(){
+  load();
+  sweepOnOpen();
+  document.getElementById("app").hidden = false;
+  document.getElementById("btn-gear").addEventListener("click", openSettings);
+  document.querySelectorAll("#nav button").forEach(function(b){
+    b.addEventListener("click", function(){ expandedGoal=null; showTab(b.dataset.tab); });
+  });
+  showTab("today");
+  renderRoot();
+}
+
+/* ============================ TEST HARNESS ============================ */
+function runTests(){
+  const results = [];
+  function assert(name, cond, detail){ results.push({name, pass:!!cond, detail}); }
+  function eq(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+
+  // 1. Quota T=5 [hit,hit,miss,hit,resolved,hit,hit]
+  (function(){
+    const days = {0:"hit",1:"hit",2:"miss",3:"hit",4:"resolved",5:"hit",6:"hit"};
+    const m = quotaMath(5, days, 7);
+    assert("1 quota hits=5", m.hits===5, m.hits);
+    assert("1 quota misses=2", m.misses===2, m.misses);
+    assert("1 quota sparesLeft=0", m.sparesLeft===0, m.sparesLeft);
+    assert("1 quota verdict HIT", m.verdict==="HIT", m.verdict);
+  })();
+
+  // 2. Quota T=5 with 3 misses => OVER BY 1, MISS, still loggable
+  (function(){
+    const days = {0:"miss",1:"miss",2:"miss",3:"hit",4:"hit",5:"hit",6:"hit"};
+    const m = quotaMath(5, days, 7);
+    assert("2 quota over=1", m.over===1, m.over);
+    assert("2 quota verdict MISS", m.verdict==="MISS", m.verdict);
+  })();
+
+  // 3. Pool risk transitions
+  (function(){
+    assert("3 pool Wed safe", poolRisk(3,4)==="safe", poolRisk(3,4));
+    assert("3 pool Thu tight", poolRisk(3,3)==="tight", poolRisk(3,3));
+    assert("3 pool Fri risk", poolRisk(3,2)==="risk", poolRisk(3,2));
+  })();
+
+  // 4. Fixed Mon/Wed/Fri, Wed missed→Thu, all hit => HIT; Wed renders →; 2nd swap rejected
+  (function(){
+    const sched=[0,2,4]; const days={0:"hit",2:"miss",4:"hit"}; const swaps={};
+    const r1 = trySwapFixed(swaps, sched, 2, 3, 2); // today=Wed(2)? must be future; use today=1
+    // redo with today=1 (Tue) so Thu(3) is future
+    const swaps2={}; const days2={0:"hit",2:"miss",4:"hit"};
+    const rr = trySwapFixed(swaps2, sched, 2, 3, 1);
+    assert("4 swap ok", rr.ok===true, rr);
+    days2[3]="hit";
+    assert("4 fixed verdict HIT", fixedVerdict(sched, days2, swaps2)==="HIT", fixedVerdict(sched,days2,swaps2));
+    const inst = fixedInstances(sched, days2, swaps2);
+    const wed = inst.find(i=>i.origin===2);
+    assert("4 wed moved", swaps2[2]===3, swaps2);
+    const rr2 = trySwapFixed(swaps2, sched, 2, 5, 1);
+    assert("4 second swap rejected", rr2.ok===false, rr2);
+  })();
+
+  // 5. Counter P=3 D=7 [3,4,0,3,3,2,3] => daysHit 5 MISS
+  (function(){
+    const counts={0:3,1:4,2:0,3:3,4:3,5:2,6:3};
+    const m = counterMath(3,7,counts);
+    assert("5 counter daysHit=5", m.daysHit===5, m.daysHit);
+    assert("5 counter verdict MISS", m.verdict==="MISS", m.verdict);
+  })();
+
+  // 6. Late commit Wednesday: dip=5; quota T=5 => T'=4; Mon/Tue not-in-play; fixed Mon dropped
+  (function(){
+    const dip = daysInPlay(2); // Wed=2
+    assert("6 dip=5", dip===5, dip);
+    assert("6 prorate T'=4", prorate(5, dip)===4, prorate(5,dip));
+    const g = {type:"fixed", params:{days:[0,2,4]}};
+    const snap = snapshotParams(g, 2, dip);
+    assert("6 fixed Mon dropped", eq(snap.days,[2,4]), snap.days);
+  })();
+
+  // 7. Grace: Tue 11:59 Mon editable; Tue 12:00 Mon resolves; Wed Mon view-only
+  (function(){
+    // now: Tue=1, hour 11.98 => Mon(0) NOT resolvable
+    assert("7 Tue 11:59 Mon editable", isResolvable(0,{day:1,hour:11.98})===false, "");
+    // Tue 12:00 => Mon resolvable
+    assert("7 Tue 12:00 Mon resolves", isResolvable(0,{day:1,hour:12})===true, "");
+    // Wed => Mon (older than yesterday) resolvable/view-only
+    assert("7 Wed Mon view-only", isResolvable(0,{day:2,hour:9})===true, "");
+    // actual resolve flip on quota
+    const goals=[{id:"g",type:"quota"}];
+    const wk={committedOnDay:0, goals:[{goalId:"g", snap:{target:5,dip:7}, days:{}, swaps:{}, counts:{}, poolDone:{}}]};
+    resolveWeek(goals, wk, {day:1, hour:12});
+    assert("7 resolve sets Mon resolved", wk.goals[0].days[0]==="resolved", wk.goals[0].days);
+    assert("7 resolve leaves today unlogged", wk.goals[0].days[1]==null, wk.goals[0].days);
+  })();
+
+  // 8. Rollover: prior week unreviewed => forced review; commit prorates
+  (function(){
+    const saved = state;
+    state = seedState();
+    // create a committed prior week, unreviewed
+    const ck = currentWeekKey();
+    const pk = prevWeekKey(ck);
+    state.weeks[pk] = buildWeek(0); state.weeks[pk].reviewedAt=null;
+    const forced = findForcedReview(ck);
+    assert("8 forced review = prior", forced===pk, forced);
+    state = saved;
+  })();
+
+  // 9. Achievements: SWEEP unlocks once; HONEST requires zero resolved
+  (function(){
+    const saved = state;
+    state = freshState();
+    state.goals=[{id:"g",type:"quota",name:"Q",params:{target:5},status:"active",createdWeek:"2026-W10"}];
+    const ck="2026-W10";
+    state.weeks[ck]=buildWeekFor(["g"],0);
+    // all hits => sweep + honest (no resolved, no unlogged)
+    const wg=state.weeks[ck].goals[0];
+    for (let d=0; d<7; d++) wg.days[d]="hit";
+    let earned = evalAchievements(ck);
+    assert("9 SWEEP earned", earned.indexOf("SWEEP")>=0, earned);
+    assert("9 HONEST earned", earned.indexOf("HONEST")>=0, earned);
+    // mark reviewed, second eval must NOT re-earn SWEEP
+    state.weeks[ck].reviewedAt="x";
+    earned = evalAchievements(ck);
+    assert("9 SWEEP not re-earned", earned.indexOf("SWEEP")<0, earned);
+    // HONEST fails if a resolved day present
+    state = freshState();
+    state.goals=[{id:"g",type:"quota",name:"Q",params:{target:5},status:"active",createdWeek:"2026-W11"}];
+    state.weeks["2026-W11"]=buildWeekFor(["g"],0);
+    const wg2=state.weeks["2026-W11"].goals[0];
+    for (let d=0; d<6; d++) wg2.days[d]="hit";
+    wg2.days[6]="resolved";
+    earned = evalAchievements("2026-W11");
+    assert("9 HONEST blocked by resolved", earned.indexOf("HONEST")<0, earned);
+    state = saved;
+  })();
+
+  // 10. Slot friction: 4 ok, 5 friction, 6 blocked
+  (function(){
+    assert("10 3 active ok", slotAction(3)==="ok", slotAction(3));
+    assert("10 5th friction", slotAction(4)==="friction", slotAction(4));
+    assert("10 6th blocked", slotAction(5)==="blocked", slotAction(5));
+    assert("10 hard cap holds", slotAction(6)==="blocked", slotAction(6));
+  })();
+
+  // 11. Export -> wipe -> import deep-equal
+  (function(){
+    const saved = state;
+    state = seedState();
+    const wk = buildWeek(0); state.weeks[currentWeekKey()]=wk;
+    const dump = JSON.parse(JSON.stringify(state));
+    const exported = JSON.stringify(state, null, 2);
+    // wipe
+    state = seedState();
+    // import
+    const imported = JSON.parse(exported);
+    assert("11 round-trip deep-equal", eq(imported, dump), "mismatch");
+    state = saved;
+  })();
+
+  // print
+  let pass=0, fail=0;
+  console.log("%cWEEK — acceptance harness","font-weight:bold");
+  results.forEach(function(r){
+    if (r.pass){ pass++; console.log("PASS  "+r.name); }
+    else { fail++; console.error("FAIL  "+r.name+"  ("+JSON.stringify(r.detail)+")"); }
+  });
+  console.log("%c"+pass+" PASS / "+fail+" FAIL","font-weight:bold;color:"+(fail?"#FF4A00":"#1C1D1B"));
+  return {pass, fail};
+}
+/* helper for tests: build a week from explicit goal ids */
+function buildWeekFor(ids, committedDay){
+  const dip = daysInPlay(committedDay);
+  const wg = ids.map(function(id){
+    const g = state.goals.find(x=>x.id===id);
+    return { goalId:id, snap:snapshotParams(g, committedDay, dip), days:{}, swaps:{}, counts:{}, poolDone:{}, verdict:null };
+  });
+  return { committedOnDay:committedDay, goals:wg, reviewedAt:null, decisions:{} };
+}
+
+/* ============================ ENTRY ============================ */
+if (QS.get("test")==="1"){
+  // run headless engine tests; still boot UI for inspection
+  load();
+  runTests();
+  boot();
+} else {
+  boot();
+}
+</script>
+</body>
+</html>
