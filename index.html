@@ -146,6 +146,23 @@ main{flex:1; padding:0 16px;}
 .cell.nip{background:var(--panel-deep); border:none;}
 .cell.tap{cursor:pointer;}
 .cell.tap:active{transform:scale(0.94);}
+
+/* Hit-area expansion. The bible locks visual faces (day cell 38x46, pool box 24,
+   chip h34); criterion 12 requires >=44px touch targets. Each control keeps its
+   drawn face and grows an invisible hit area instead. Expansions are sized to
+   stay inside the neighbouring gap, so targets never overlap. */
+.cell.tap::before, .tip .x::before, .pbox::before,
+.daychip::before, .chip::before, .btn.sm::before, .step-btn::before{
+  content:""; position:absolute; left:0; top:0; right:0; bottom:0;
+}
+.cell.tap::before{inset:-4px -3px;}      /* 38x46 -> 44x54, only today's cell */
+.tip .x::before{inset:-6px;}             /* 32     -> 44 */
+.pbox::before{inset:-10px;}              /* 24     -> 44 */
+.daychip::before{inset:-12px -4px;}      /* h21    -> h45 */
+.chip::before{inset:-5px 0;}             /* h34    -> h44 */
+.btn.sm::before{inset:-3px 0;}           /* h38    -> h44 */
+.step-btn::before{inset:-2px;}           /* 40     -> 44 (compact variants) */
+.tip .x, .pbox, .daychip, .chip, .btn.sm, .step-btn{position:relative;}
 .cell .glyph{font-size:16px; line-height:1;}
 .cell.anim{animation:tick 120ms cubic-bezier(0.2,0,0,1);}
 @keyframes tick{from{transform:scale(0.94);} to{transform:scale(1);}}
@@ -167,7 +184,8 @@ main{flex:1; padding:0 16px;}
 
 /* ---- pool items ---- */
 .pool{display:flex; flex-direction:column; gap:2px;}
-.pitem{display:flex; align-items:center; gap:12px; padding:6px 0;}
+/* row pitch >= 48 so the box and day-chip hit areas stay inside their own row */
+.pitem{display:flex; align-items:center; gap:12px; padding:12px 0; min-height:48px;}
 .pbox{
   width:24px; height:24px; flex:none; border:1.5px solid var(--line);
   border-radius:3px; background:var(--surface); display:grid; place-items:center;
@@ -184,7 +202,8 @@ main{flex:1; padding:0 16px;}
 .daychip.done{opacity:0.5;}
 
 /* ---- chips ---- */
-.chips{display:flex; flex-wrap:wrap; gap:8px;}
+/* gap >= the chips' vertical hit expansion so wrapped rows never overlap */
+.chips{display:flex; flex-wrap:wrap; gap:12px;}
 .chip{
   font-family:var(--mono); text-transform:uppercase; letter-spacing:0.06em;
   font-size:11px; height:34px; padding:0 12px; display:inline-flex; align-items:center;
@@ -996,7 +1015,11 @@ function buildStrip(g, wg, opts){
   const n = nowCtx();
   const swapDest = {}; for (const o in (wg.swaps||{})) swapDest[wg.swaps[o]] = o;
   for (let d=0; d<7; d++){
-    const cell = el("button","cell");
+    // only today's cell is ever tappable; the rest are read-only marks, so they
+    // are drawn as plain divs and stay out of the tab order
+    const tappable = !!opts.interactive && d===n.day &&
+      (g.type==="quota" || (g.type==="fixed" && wg.snap.days.includes(d) && !(wg.swaps||{})[d]));
+    const cell = el(tappable ? "button" : "div", "cell");
     cell.setAttribute("aria-label", DAY_FULL[d]);
     const lab = el("span","d mono", DAY_INI[d]); cell.appendChild(lab);
 
@@ -1006,9 +1029,7 @@ function buildStrip(g, wg, opts){
 
     let st = "future";
     if (g.type==="quota"){
-      st = wg.days[d] || (d < n.day || (d===n.day) ? "unlogged":"future");
-      if (d > n.day) st = "future";
-      else st = wg.days[d] || "unlogged";
+      st = d > n.day ? "future" : (wg.days[d] || "unlogged");
     } else if (g.type==="fixed"){
       const scheduled = wg.snap.days.includes(d);
       const isDest = swapDest[d]!=null;
@@ -1021,11 +1042,14 @@ function buildStrip(g, wg, opts){
       if (c==null){ st = d>n.day?"future":"unlogged"; }
       else st = c>=wg.snap.perDay ? "hit" : "miss";
     } else if (g.type==="pool"){
-      st = "future"; // pool has no per-day strip states; render neutral
+      // a pool day reads as done when at least one item was checked off on it
+      let doneHere = false;
+      for (const i in (wg.poolDone||{})) if (wg.poolDone[i]===d){ doneHere = true; break; }
+      st = doneHere ? "hit" : (d > n.day ? "future" : "unlogged");
     }
     applyCellState(cell, st, g, wg, d);
 
-    if (opts.interactive && d===n.day && (g.type==="quota" || (g.type==="fixed" && wg.snap.days.includes(d) && !(wg.swaps||{})[d]))){
+    if (tappable){
       cell.classList.add("tap");
       cell.addEventListener("click", function(){ toggleDay(g, wg, d, cell); });
     }
@@ -1333,7 +1357,6 @@ function weekRow(g, wg){
   row.appendChild(top);
 
   const sw = el("div","stripwrap");
-  wg._startDay = wg.committedOnDay!=null?wg.committedOnDay:(currentWeek().committedOnDay||0);
   wg._startDay = currentWeek().committedOnDay||0;
   sw.appendChild(buildStrip(g, wg, {interactive:false}));
   row.appendChild(sw);
@@ -1946,16 +1969,6 @@ function renderRoot(){
     return;
   }
   showTab(activeTab);
-}
-
-/* mark fully-skipped weeks as abandoned (unreviewed) */
-function markAbandoned(){
-  const ck = currentWeekKey();
-  const keys = Object.keys(state.weeks).filter(k=>k<ck);
-  // Any committed week older than the immediately-previous unreviewed one, that has
-  // an intervening committed newer week, was skipped => abandoned.
-  // Simpler: if a week is unreviewed and there exists a strictly newer reviewed/committed week, keep as forced;
-  // handled by findForcedReview. Nothing to auto-abandon here in v1 single-user flow.
 }
 
 /* ---- haptics ---- */
