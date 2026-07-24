@@ -681,13 +681,11 @@ function phase(){
   return { mode:"active", key:ck };
 }
 function findForcedReview(currentKey){
-  const keys = Object.keys(state.weeks).filter(k=>k < currentKey);
+  // most recent prior committed-but-unreviewed week; older skipped ones archive as unreviewed
+  const keys = Object.keys(state.weeks)
+    .filter(k=>k < currentKey && state.weeks[k].reviewedAt==null && !state.weeks[k].abandoned);
   keys.sort();
-  for (const k of keys){
-    const w = state.weeks[k];
-    if (w.reviewedAt == null && !w.abandoned){ return k; }
-  }
-  return null;
+  return keys.length ? keys[keys.length-1] : null;
 }
 function reviewUnlocked(){
   const n = nowCtx();
@@ -1188,8 +1186,12 @@ function renderToday(){
 
   if (ph.mode==="planning"){ renderPlanningInto(scr); return; }
 
+  // Signal-orange budget: the Sunday review banner outranks the tip slot, so
+  // Today never stacks two orange advisory strips.
+  const showReview = reviewUnlocked() && currentWeek().reviewedAt==null;
+
   // tip slot
-  const tip = pickTip();
+  const tip = showReview ? null : pickTip();
   if (tip){
     const t = el("div","tip");
     const body = el("div","body");
@@ -1235,7 +1237,7 @@ function renderToday(){
   }
 
   // sunday review banner
-  if (reviewUnlocked() && wk.reviewedAt==null){
+  if (showReview){
     const b = el("div","tip"); b.style.borderLeftColor="var(--signal)";
     const body = el("div","body");
     body.appendChild(el("div","lbl caps","Review"));
@@ -1724,34 +1726,43 @@ function adjustSheet(g, suggest){
 }
 function commitReview(){
   const wk = state.weeks[reviewKey];
-  // apply achievements (persist)
-  const earned = evalAchievements(reviewKey);
+  // persist achievements earned this week
+  evalAchievements(reviewKey);
   wk.reviewedAt = now().toISOString();
   wk.decisions = Object.assign({}, reviewDecisions);
-  // apply decisions to goals
+  // apply decisions to goals (adjust already mutated params via the sheet)
   for (const gid in reviewDecisions){
     const g = state.goals.find(x=>x.id===gid); if (!g) continue;
     const d = reviewDecisions[gid];
     if (d==="park") g.status="parked";
     else if (d==="drop") g.status="dropped";
-    // adjust already mutated params via sheet; keep active
   }
-  save();
-  // seed next week
-  const nextKey = nextWeekKeyFrom(reviewKey);
+  const ck = currentWeekKey();
   const n = nowCtx();
-  // if next week is the actual current week, prorate to today; else full week
-  const commitDay = (nextKey===currentWeekKey()) ? n.day : 0;
-  if (!state.weeks[nextKey]){
-    const nw = buildWeek(commitDay);
-    // buildWeek uses today's day; override committedOnDay for a future/committed week
-    nw.committedOnDay = commitDay;
-    state.weeks[nextKey] = nw;
-    resolveWeek(state.goals, nw, n);
+  if (reviewKey === ck){
+    // normal same-week Sunday review: seed the next ISO week as a full week
+    const nextKey = nextWeekKeyFrom(reviewKey);
+    if (!state.weeks[nextKey]){
+      const nw = buildWeek(0); nw.committedOnDay = 0;
+      state.weeks[nextKey] = nw;
+    }
+  } else {
+    // rollover catch-up: archive any older skipped weeks, seed the current week prorated
+    Object.keys(state.weeks).forEach(function(k){
+      if (k < ck && k !== reviewKey && state.weeks[k].reviewedAt==null && !state.weeks[k].abandoned)
+        state.weeks[k].abandoned = true;
+    });
+    if (!state.weeks[ck]){
+      const nw = buildWeek(n.day);
+      state.weeks[ck] = nw;
+      resolveWeek(state.goals, nw, n);
+    }
   }
   save();
   closeReview();
-  activeTab="today"; showTab("today");
+  // another prior week may still need catch-up review; renderRoot re-checks
+  activeTab="today";
+  renderRoot();
 }
 function nextWeekKeyFrom(key){
   const mon = mondayOfKey(key); mon.setDate(mon.getDate()+7); return weekKeyOf(mon);
@@ -1928,16 +1939,13 @@ function showTab(tab){
 function renderRoot(){
   renderBanner();
   renderHeader();
-  // rollover: forced review
+  // rollover: a prior committed-but-unreviewed week forces the Review screen first
   const ph = phase();
   if (ph.mode==="review" && ph.forced){
-    // abandon deeper-skipped weeks handled by markAbandoned
     openReview(ph.key, true);
     return;
   }
-  if (activeTab==="today") renderToday();
-  else if (activeTab==="week") renderWeek();
-  else if (activeTab==="trophies") renderTrophies();
+  showTab(activeTab);
 }
 
 /* mark fully-skipped weeks as abandoned (unreviewed) */
@@ -1962,7 +1970,6 @@ function boot(){
   document.querySelectorAll("#nav button").forEach(function(b){
     b.addEventListener("click", function(){ expandedGoal=null; showTab(b.dataset.tab); });
   });
-  showTab("today");
   renderRoot();
 }
 
