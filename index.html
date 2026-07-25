@@ -25,6 +25,8 @@
   --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --body:system-ui, "Helvetica Neue", Arial, sans-serif;
 
+  /* one gutter for the whole app: header, screens and rows share this edge */
+  --gutter:20px;
   --r4:4px; --r6:6px;
   --hatch:repeating-linear-gradient(45deg,
       var(--line) 0, var(--line) 1px, var(--surface) 1px, var(--surface) 5px);
@@ -55,7 +57,7 @@ button:focus-visible, [tabindex]:focus-visible, a:focus-visible{
 #app{
   max-width:520px; margin:0 auto; min-height:100dvh;
   display:flex; flex-direction:column;
-  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+  padding-bottom:calc(92px + env(safe-area-inset-bottom));
 }
 .banner{
   background:var(--ink); color:var(--surface);
@@ -66,11 +68,11 @@ button:focus-visible, [tabindex]:focus-visible, a:focus-visible{
 
 /* ---- header ---- */
 header{
-  padding:32px 20px 12px; display:flex; align-items:flex-start;
+  padding:36px var(--gutter) 18px; display:flex; align-items:flex-start;
   justify-content:space-between; gap:12px;
 }
 header .lede h1{
-  font-family:var(--display); font-weight:600; font-size:30px; line-height:34px;
+  font-family:var(--display); font-weight:600; font-size:32px; line-height:34px;
   letter-spacing:-0.01em; margin:0;
 }
 header .lede .wk{ margin-top:6px; color:var(--ink-2); }
@@ -81,7 +83,7 @@ header .lede .wk{ margin-top:6px; color:var(--ink-2); }
 .gear:active{border:2px solid var(--ink);}
 
 /* ---- screen container ---- */
-main{flex:1; padding:0 16px;}
+main{flex:1; padding:0 var(--gutter);}
 .screen{display:none;}
 .screen.on{display:block; animation:fade 120ms ease both;}
 @keyframes fade{from{opacity:0;} to{opacity:1;}}
@@ -89,15 +91,15 @@ main{flex:1; padding:0 16px;}
 /* ---- section heads ---- */
 .sec-head{
   font-family:var(--display); font-weight:600; font-size:17px;
-  margin:28px 4px 12px;
+  margin:34px 0 14px;
 }
-.tiny-head{margin:24px 4px 10px; color:var(--ink-2);}
+.tiny-head{margin:28px 0 12px; color:var(--ink-2);}
 
 /* ---- tip slot ---- */
 .tip{
   background:var(--surface); border:1.5px solid var(--line);
   border-left:3px solid var(--signal);
-  border-radius:var(--r4); padding:12px 14px; margin:8px 4px 4px;
+  border-radius:var(--r4); padding:13px 15px; margin:4px 0 6px;
   display:flex; gap:12px; align-items:flex-start;
 }
 .tip .body{flex:1;}
@@ -109,9 +111,9 @@ main{flex:1; padding:0 16px;}
 .rows{border-top:1px solid var(--line);}
 .grow{
   border-bottom:1px solid var(--line);
-  padding:16px 4px; position:relative;
+  padding:17px 0; position:relative;
 }
-.grow.risk{border-left:3px solid var(--signal); padding-left:12px;}
+.grow.risk{border-left:3px solid var(--signal); padding-left:14px; margin-left:-14px;}
 .grow .top{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
 .grow .name{font-family:var(--display); font-weight:600; font-size:15px;}
 .grow .meta{color:var(--ink-2); margin-top:2px;}
@@ -119,13 +121,13 @@ main{flex:1; padding:0 16px;}
 .grow .ctl{margin-top:12px;}
 .grow .nudge{color:var(--ink-2); font-size:13px; margin-top:8px;}
 .grow.risk .nudge{color:var(--ink);}
-.recessed{background:var(--panel-deep); border-radius:var(--r4); padding:4px 12px; margin:0 0 4px;}
+.recessed{background:var(--panel-deep); border-radius:var(--r4); padding:2px 14px; margin:0 0 4px;}
 .recessed .grow:last-child{border-bottom:none;}
 
 /* ---- 7-cell week strip ---- */
-.strip{display:flex; gap:2px; flex-wrap:nowrap;}
+.strip{display:flex; gap:3px; flex-wrap:nowrap; width:100%;}
 .cell{
-  width:38px; height:46px; flex:none;
+  flex:1 1 0; min-width:38px; height:48px;
   background:var(--surface); border:1.5px solid var(--line); border-radius:var(--r4);
   position:relative; display:grid; place-items:center;
   padding:0; transition:transform 120ms cubic-bezier(0.2,0,0,1);
@@ -143,7 +145,8 @@ main{flex:1; padding:0 16px;}
 .cell.moved .glyph{font-family:var(--mono); font-size:18px; color:var(--ink-2);}
 .cell.dest{border-style:dashed;}
 .cell.future{background:var(--surface);}
-.cell.nip{background:var(--panel-deep); border:none;}
+.cell.nip{background:transparent; border-color:var(--line); opacity:0.3;}
+.cell.blank{background:transparent; opacity:0.32;}
 .cell.tap{cursor:pointer;}
 .cell.tap:active{transform:scale(0.94);}
 
@@ -158,7 +161,7 @@ main{flex:1; padding:0 16px;}
 .cell.tap::before{inset:-4px -3px;}      /* 38x46 -> 44x54, only today's cell */
 .tip .x::before{inset:-6px;}             /* 32     -> 44 */
 .pbox::before{inset:-10px;}              /* 24     -> 44 */
-.daychip::before{inset:-12px -4px;}      /* h21    -> h45 */
+.daychip::before{inset:-8px -4px;}       /* h28    -> h44 */
 .chip::before{inset:-5px 0;}             /* h34    -> h44 */
 .btn.sm::before{inset:-3px 0;}           /* h38    -> h44 */
 .step-btn::before{inset:-2px;}           /* 40     -> 44 (compact variants) */
@@ -168,36 +171,40 @@ main{flex:1; padding:0 16px;}
 @keyframes tick{from{transform:scale(0.94);} to{transform:scale(1);}}
 
 /* ---- counter stepper ---- */
-.stepper{display:flex; gap:2px; align-items:stretch;}
+.stepper{display:flex; gap:3px; align-items:stretch; width:100%;}
 .step-btn{
-  width:46px; height:46px; flex:none; background:var(--surface);
+  width:64px; height:48px; flex:none; background:var(--surface);
   border:1.5px solid var(--line); border-radius:var(--r4);
   font-family:var(--mono); font-size:22px; display:grid; place-items:center;
 }
 .step-btn:active{background:var(--ink); color:var(--surface); border-color:var(--ink);}
 .step-val{
-  min-width:74px; height:46px; padding:0 10px; background:var(--surface);
+  flex:1 1 0; height:48px; padding:0 10px; background:var(--surface);
   border:1.5px solid var(--line); border-radius:var(--r4);
   font-family:var(--mono); font-size:22px; display:grid; place-items:center;
 }
 .step-meta{margin-left:12px; align-self:center; color:var(--ink-2);}
+.stepper.compact{width:auto; flex:none;}
+.stepper.compact .step-btn{width:44px; height:44px; font-size:18px;}
+.step-val.hour{flex:none; width:78px; height:44px; font-size:16px;}
 
 /* ---- pool items ---- */
 .pool{display:flex; flex-direction:column; gap:2px;}
 /* row pitch >= 48 so the box and day-chip hit areas stay inside their own row */
-.pitem{display:flex; align-items:center; gap:12px; padding:12px 0; min-height:48px;}
+.pitem{display:flex; align-items:center; gap:14px; padding:8px 0; min-height:44px;}
 .pbox{
   width:24px; height:24px; flex:none; border:1.5px solid var(--line);
   border-radius:3px; background:var(--surface); display:grid; place-items:center;
 }
 .pbox.on{background:var(--ink); border-color:var(--ink);}
 .pbox .glyph{color:var(--surface); font-size:14px;}
-.pitem .pname{flex:1; font-size:15px;}
+.pitem .pname{flex:1; font-family:var(--display); font-weight:500; font-size:15px;}
 .pitem.done .pname{color:var(--ink-2);}
 .daychip{
   font-family:var(--mono); text-transform:uppercase; letter-spacing:0.06em;
-  font-size:10px; padding:4px 7px; border:1.5px solid var(--line);
-  border-radius:3px; background:var(--surface); color:var(--ink-2);
+  font-size:10px; width:52px; min-height:28px; display:inline-flex;
+  align-items:center; justify-content:center; border:1.5px solid var(--line);
+  border-radius:3px; background:var(--surface); color:var(--ink-2); flex:none;
 }
 .daychip.done{opacity:0.5;}
 
@@ -223,6 +230,7 @@ main{flex:1; padding:0 16px;}
 .btn.primary{background:var(--ink); color:var(--surface);}
 .btn.commit{background:var(--signal); color:var(--surface); border-color:var(--signal);}
 .btn.quiet{border-color:var(--line); background:var(--surface); color:var(--ink-2);}
+.btn.add{border-color:var(--line); border-style:dashed; background:transparent; color:var(--ink-2);}
 .btn:disabled{opacity:0.4;}
 .btn.sm{height:38px; width:auto; padding:0 14px;}
 .btnrow{display:flex; gap:8px; margin-top:10px;}
@@ -235,6 +243,8 @@ main{flex:1; padding:0 16px;}
 .vtok.hit{background:var(--ink); border-color:var(--ink);}
 .vtok.hit .glyph{color:var(--surface); font-size:15px;}
 .vtok.miss{background:var(--hatch);}
+.vtok.pending{background:var(--surface);}
+.vtok.pending::after{content:""; width:9px; height:1.5px; background:var(--ink-2);}
 
 /* ---- week table ---- */
 .wtable .grow{cursor:pointer;}
@@ -259,21 +269,21 @@ main{flex:1; padding:0 16px;}
 .dtog.on{background:var(--ink); color:var(--surface); border-color:var(--ink);}
 
 /* ---- trophies ---- */
-.stamps{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:8px 4px;}
+.stamps{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:8px 0;}
 .stamp{display:flex; flex-direction:column; align-items:center; gap:6px;}
 .stamp .sq{
-  width:56px; height:56px; border:1.5px solid var(--line); border-radius:var(--r4);
+  width:100%; aspect-ratio:1; border:1.5px solid var(--line); border-radius:var(--r4);
   display:grid; place-items:center; background:var(--surface);
-  font-family:var(--mono); font-weight:600; font-size:13px; letter-spacing:0.02em;
+  font-family:var(--mono); font-weight:600; font-size:19px; letter-spacing:0.02em;
 }
 .stamp.locked .sq{background:var(--hatch); color:var(--ink-2);}
 .stamp.on .sq{background:var(--ink); color:var(--surface); border-color:var(--ink);}
-.stamp .cap{font-size:9px; color:var(--ink-2);}
+.stamp .cap{font-size:9px; color:var(--ink-2); text-align:center;}
 .stamp.stamped .sq{animation:stampin 240ms cubic-bezier(0.2,0,0,1);}
 @keyframes stampin{0%{transform:scale(1.15);} 40%{opacity:0.6;} 100%{transform:scale(1);}}
 .arch{border-top:1px solid var(--line); margin-top:8px;}
 .archrow{
-  display:flex; align-items:center; gap:12px; padding:12px 4px;
+  display:flex; align-items:center; gap:12px; padding:15px 0;
   border-bottom:1px solid var(--line); font-family:var(--mono); font-size:13px;
 }
 .archrow .wk{width:56px; color:var(--ink-2);}
@@ -314,6 +324,12 @@ nav button.on .ic{color:var(--ink);}
   padding:22px; margin:auto;
 }
 .scrim.center{align-items:center;}
+.sheet, .dialog{position:relative;}
+.panel-x{
+  position:absolute; top:10px; right:10px; width:44px; height:44px;
+  display:grid; place-items:center; color:var(--ink-2); font-size:22px; line-height:1;
+}
+.sheet h2, .dialog h2{padding-right:40px;}
 .sheet h2, .dialog h2{font-family:var(--display); font-weight:600; font-size:19px; margin:0 0 4px;}
 .sheet .row{display:flex; align-items:center; justify-content:space-between; gap:12px;
   padding:14px 0; border-bottom:1px solid var(--line);}
@@ -321,13 +337,13 @@ nav button.on .ic{color:var(--ink);}
 .dialog p{font-size:14px; line-height:20px; color:var(--ink-2); margin:6px 0 16px;}
 
 /* ---- review takeover ---- */
-#review-screen{padding:0 16px;}
+#review-screen{padding:0;}
 .rzone{margin-top:24px;}
-.rgoal{display:flex; align-items:flex-start; gap:12px; padding:14px 4px; border-bottom:1px solid var(--line);}
+.rgoal{display:flex; align-items:flex-start; gap:14px; padding:18px 0; border-bottom:1px solid var(--line);}
 .rgoal .rname{font-family:var(--display); font-weight:600; font-size:15px;}
 .rgoal .rdiag{color:var(--ink-2); font-size:13px; margin-top:3px;}
 .rdecide{margin-top:10px;}
-.empty{color:var(--ink-2); font-size:14px; padding:14px 4px;}
+.empty{color:var(--ink-2); font-size:14px; padding:16px 0;}
 
 /* reduced motion */
 @media (prefers-reduced-motion: reduce){
@@ -711,6 +727,11 @@ function reviewUnlocked(){
   return n.day > CFG.reviewUnlockDay ||
     (n.day === CFG.reviewUnlockDay && n.hour >= CFG.reviewUnlockHour);
 }
+/* the running week can be judged once the review window opens (or it is reviewed) */
+function weekSettled(){
+  const wk = currentWeek();
+  return !!(wk && wk.reviewedAt) || reviewUnlocked();
+}
 
 /* ============================ RESOLVER ON OPEN ============================ */
 function sweepOnOpen(){
@@ -721,16 +742,19 @@ function sweepOnOpen(){
 }
 
 /* ============================ ACHIEVEMENTS ============================ */
+/* [id, meaning, stamp glyph]. Per 2.6 the stamp carries mono initials, not the
+   full name — long ids overflowed the square. The meaning surfaces in Review. */
 const ACH_LIST = [
-  ["FIRST","First review done"],
-  ["SWEEP","All goals HIT"],
-  ["DOUBLE","Two SWEEPs running"],
-  ["COMEBACK","Missed→HIT next week"],
-  ["HONEST","Every day logged"],
-  ["NO-SPARE","Quota 7/7, T≤5"],
-  ["EARLY","Pool cleared by Fri"],
-  ["STEADY","4 reviews running"],
+  ["FIRST","First review done","1"],
+  ["SWEEP","All goals HIT","SW"],
+  ["DOUBLE","Two SWEEPs running","2×"],
+  ["COMEBACK","Missed→HIT next week","CB"],
+  ["HONEST","Every day logged","HN"],
+  ["NO-SPARE","Quota 7/7, T≤5","NS"],
+  ["EARLY","Pool cleared by Fri","EA"],
+  ["STEADY","4 reviews running","ST"],
 ];
+function achGlyph(id){ const a = ACH_LIST.find(x=>x[0]===id); return a ? a[2] : id.slice(0,2); }
 /* Evaluate achievements at review-commit of week `key`. Returns list newly earned. */
 function evalAchievements(key){
   const earned = [];
@@ -1063,7 +1087,7 @@ function applyCellState(cell, st, g, wg, d){
   else if (st==="resolved"){ cell.classList.add("resolved"); }
   else if (st==="moved"){ cell.classList.add("moved"); const a=el("span","glyph","→"); cell.appendChild(a); }
   else if (st==="future"){ cell.classList.add("future"); }
-  else if (st==="blank"){ /* scheduled-nothing */ cell.style.opacity="0.45"; }
+  else if (st==="blank"){ cell.classList.add("blank"); }
   // unlogged => plain surface
 }
 function checkGlyph(){
@@ -1166,8 +1190,6 @@ function counterControl(g, wg){
   plus.addEventListener("click", function(){ setCount(g,wg,n.day,(wg.counts[n.day]||0)+1); });
   step.appendChild(minus); step.appendChild(val); step.appendChild(plus);
   wrap.appendChild(step);
-  const meta = el("div","step-meta caps","DAYS "+counterMath(wg.snap.perDay,wg.snap.daysTarget,wg.counts).daysHit+"/"+wg.snap.daysTarget);
-  wrap.appendChild(meta);
   return wrap;
 }
 function setCount(g, wg, d, v){
@@ -1188,7 +1210,10 @@ function poolControl(g, wg){
       save(); vibrate(8); renderToday();
     });
     const name = el("div","pname", it.name);
-    const chip = el("button","daychip"+(done?" done":""), done?("DONE "+DAYS[wg.poolDone[i]].toUpperCase()):DAYS[it.suggestedDay].toUpperCase());
+    // the checked box already says "done"; the chip only carries the day, so the
+    // column keeps one width and one meaning
+    const chip = el("button","daychip"+(done?" done":""),
+      (done ? DAYS[wg.poolDone[i]] : DAYS[it.suggestedDay]).toUpperCase());
     chip.addEventListener("click", function(e){ e.stopPropagation(); reassignPoolDay(g,wg,i); });
     row.appendChild(box); row.appendChild(name); row.appendChild(chip);
     pool.appendChild(row);
@@ -1335,7 +1360,7 @@ function renderWeek(){
   scr.appendChild(table);
 
   // add goal
-  const addBtn = el("button","btn quiet",STR.addGoal); addBtn.style.marginTop="18px";
+  const addBtn = el("button","btn add",STR.addGoal); addBtn.style.marginTop="18px";
   const activeCount = state.goals.filter(g=>g.status==="active").length;
   if (slotAction(activeCount)==="blocked"){ addBtn.disabled=true; }
   addBtn.addEventListener("click", function(){ onAddGoal(); });
@@ -1352,7 +1377,10 @@ function weekRow(g, wg){
   left.appendChild(el("div","name", g.name));
   left.appendChild(metaLine(g, wg));
   top.appendChild(left);
-  const v = el("div"); v.appendChild(verdictTok(goalVerdict(g.type,wg.snap,wg)));
+  // A verdict is only true once the week can be judged. Mid-week every goal
+  // would otherwise show a MISS hatch, which is both premature and grim.
+  const v = el("div");
+  v.appendChild(weekSettled() ? verdictTok(goalVerdict(g.type,wg.snap,wg)) : paceTok(g, wg));
   top.appendChild(v);
   row.appendChild(top);
 
@@ -1369,6 +1397,8 @@ function weekRow(g, wg){
   if (expandedGoal===g.id){ row.appendChild(weekDetail(g, wg)); }
   return row;
 }
+/* status slot for a week still in play — undecided, not a failure */
+function paceTok(g, wg){ return el("div","vtok pending"); }
 function verdictTok(v){
   const t = el("div","vtok "+(v==="HIT"?"hit":"miss"));
   if (v==="HIT") t.appendChild(checkGlyph());
@@ -1572,7 +1602,6 @@ function editGoalName(g){
 function renderPlanningInto(scr){
   scr.innerHTML = "";
   scr.appendChild(el("div","sec-head",STR.planWeek));
-  scr.appendChild(el("div","meta caps",weekLabel(now())));
   const active = state.goals.filter(g=>g.status==="active");
   const table = el("div","rows"); table.style.marginTop="12px";
   active.forEach(function(g){ table.appendChild(planRow(g)); });
@@ -1594,12 +1623,12 @@ function renderPlanningInto(scr){
     scr.appendChild(chips);
   }
 
-  const addBtn = el("button","btn quiet",STR.addGoal); addBtn.style.marginTop="16px";
+  const addBtn = el("button","btn add",STR.addGoal); addBtn.style.marginTop="16px";
   addBtn.addEventListener("click", function(){ planningAdd(); });
   if (slotAction(active.length)==="blocked") addBtn.disabled=true;
   scr.appendChild(addBtn);
 
-  const commit = el("button","btn primary","Commit — start logging"); commit.style.marginTop="18px";
+  const commit = el("button","btn primary","Commit — start logging"); commit.style.marginTop="24px";
   if (active.length===0) commit.disabled=true;
   commit.addEventListener("click", function(){ commitPlanning(); });
   scr.appendChild(commit);
@@ -1671,7 +1700,7 @@ function renderReview(){
   const wk = state.weeks[reviewKey];
   const mon = mondayOfKey(reviewKey);
   scr.appendChild(el("div","sec-head","Review"));
-  scr.appendChild(el("div","meta caps", weekLabel(mon)));
+  if (reviewKey !== currentWeekKey()) scr.appendChild(el("div","meta caps", weekLabel(mon)));
 
   // zone 1: results
   const z1 = el("div","rzone"); z1.appendChild(el("div","tiny-head caps","Results"));
@@ -1713,8 +1742,8 @@ function renderReview(){
     const stamps = el("div","stamps");
     provisional.forEach(function(id){
       const s = el("div","stamp on stamped");
-      const sq = el("div","sq", id.length>5?id.slice(0,4):id); sq.textContent=id;
-      s.appendChild(sq); s.appendChild(el("div","cap caps", achName(id)));
+      s.appendChild(el("div","sq", achGlyph(id)));
+      s.appendChild(el("div","cap caps", id));
       stamps.appendChild(s);
     });
     z2.appendChild(stamps);
@@ -1728,19 +1757,31 @@ function renderReview(){
   commit.addEventListener("click", function(){ commitReview(); });
   scr.appendChild(commit);
 }
+function plural(n, one, many){ return n+" "+(n===1?one:many); }
 function diagnostic(g, wg, v){
-  if (v==="HIT"){
-    if (g.type==="quota"){ const m=quotaMath(wg.snap.target,wg.days,wg.snap.dip||7); return m.hits+"/"+wg.snap.target+" hits, "+Math.max(0,m.sparesLeft)+" spare unused."; }
-    if (g.type==="counter"){ const m=counterMath(wg.snap.perDay,wg.snap.daysTarget,wg.counts); return m.daysHit+"/"+wg.snap.daysTarget+" days met."; }
-    if (g.type==="pool"){ return "Cleared — all items done."; }
-    if (g.type==="fixed"){ return "Every session logged."; }
+  if (g.type==="quota"){
+    const m = quotaMath(wg.snap.target, wg.days, wg.snap.dip||7);
+    if (v==="HIT"){
+      return m.hits+" of "+wg.snap.target+" days." +
+        (m.sparesLeft>0 ? " "+plural(m.sparesLeft,"spare","spares")+" unused." : " No spare left.");
+    }
+    if (m.over>0) return m.hits+" of "+wg.snap.target+" days — over by "+m.over+".";
+    return m.hits+" of "+wg.snap.target+" days — "+(wg.snap.target-m.hits)+" short.";
   }
-  if (g.type==="quota"){ const m=quotaMath(wg.snap.target,wg.days,wg.snap.dip||7); return m.hits+"/"+wg.snap.target+" — "+(m.over>0?("over by "+m.over):"short by "+(wg.snap.target-m.hits))+"."; }
-  if (g.type==="counter"){ const m=counterMath(wg.snap.perDay,wg.snap.daysTarget,wg.counts); return "Only "+m.daysHit+"/"+wg.snap.daysTarget+" days met."; }
-  if (g.type==="pool"){ return poolRemaining(wg.snap,wg)+" item(s) left undone."; }
+  if (g.type==="counter"){
+    const m = counterMath(wg.snap.perDay, wg.snap.daysTarget, wg.counts);
+    if (v==="HIT") return m.daysHit+" of "+wg.snap.daysTarget+" days met.";
+    return m.daysHit+" of "+wg.snap.daysTarget+" days met — "+(wg.snap.daysTarget-m.daysHit)+" short.";
+  }
+  if (g.type==="pool"){
+    const rem = poolRemaining(wg.snap, wg);
+    return rem===0 ? "Cleared — every item done." : plural(rem,"item","items")+" left undone.";
+  }
   if (g.type==="fixed"){
-    const miss = fixedInstances(wg.snap.days,wg.days,wg.swaps).filter(i=>i.state!=="hit").map(i=>DAYS[i.origin]);
-    return (g.name.split(" ")[0])+" missed "+miss.join(", ")+".";
+    const inst = fixedInstances(wg.snap.days, wg.days, wg.swaps);
+    if (v==="HIT") return "All "+plural(inst.length,"session","sessions")+" logged.";
+    const miss = inst.filter(i=>i.state!=="hit").map(i=>DAYS[i.origin]);
+    return "Missed "+miss.join(", ")+".";
   }
   return "";
 }
@@ -1828,9 +1869,8 @@ function renderTrophies(){
   ACH_LIST.forEach(function(a){
     const on = !!state.achievements[a[0]];
     const s = el("div","stamp "+(on?"on":"locked"));
-    const sq = el("div","sq", a[0]);
-    s.appendChild(sq);
-    s.appendChild(el("div","cap caps", a[1]));
+    s.appendChild(el("div","sq", a[2]));
+    s.appendChild(el("div","cap caps", a[0]));
     stamps.appendChild(s);
   });
   scr.appendChild(stamps);
@@ -1861,10 +1901,10 @@ function openSettings(){
 
   const r1 = el("div","row");
   r1.appendChild(el("div",null,"Review hour"));
-  const rh = el("div","mono", fmtHour(state.settings.reviewHour));
-  const rhbox = el("div"); rhbox.style.display="flex"; rhbox.style.gap="6px";
-  const dn = el("button","step-btn","−"); dn.style.width="40px"; dn.style.height="40px"; dn.style.fontSize="18px";
-  const up = el("button","step-btn","+"); up.style.width="40px"; up.style.height="40px"; up.style.fontSize="18px";
+  const rh = el("div","step-val hour", fmtHour(state.settings.reviewHour));
+  const rhbox = el("div","stepper compact");
+  const dn = el("button","step-btn","−");
+  const up = el("button","step-btn","+");
   dn.addEventListener("click", function(){ state.settings.reviewHour=clamp(state.settings.reviewHour-0.5,0,23.5); rh.textContent=fmtHour(state.settings.reviewHour); save(); });
   up.addEventListener("click", function(){ state.settings.reviewHour=clamp(state.settings.reviewHour+0.5,0,23.5); rh.textContent=fmtHour(state.settings.reviewHour); save(); });
   rhbox.appendChild(dn); rhbox.appendChild(rh); rhbox.appendChild(up);
@@ -1950,17 +1990,23 @@ function wipeFlow(){
 
 /* ---- sheet / dialog plumbing ---- */
 const scrim = document.getElementById("scrim");
+function closeGlyph(){
+  const x = el("button","panel-x","×");
+  x.setAttribute("aria-label","Close");
+  x.addEventListener("click", closeSheet);
+  return x;
+}
 function openSheet(body){
   scrim.className = "scrim on";
   scrim.innerHTML = "";
-  const s = el("div","sheet"); s.appendChild(body);
+  const s = el("div","sheet"); s.appendChild(closeGlyph()); s.appendChild(body);
   scrim.appendChild(s);
   scrim.onclick = function(e){ if (e.target===scrim) closeSheet(); };
 }
 function openDialog(body){
   scrim.className = "scrim on center";
   scrim.innerHTML = "";
-  const s = el("div","dialog"); s.appendChild(body);
+  const s = el("div","dialog"); s.appendChild(closeGlyph()); s.appendChild(body);
   scrim.appendChild(s);
   scrim.onclick = function(e){ if (e.target===scrim) closeSheet(); };
 }
