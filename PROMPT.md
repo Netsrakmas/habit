@@ -137,66 +137,98 @@ Export = pretty-printed dump of this object. Import must round-trip to deep-equa
 
 ---
 
-## 3. Style bible (locked)
+## 3. Style bible v2 (locked) — neobrutalist control surface
 
-**Anchors:** Teenage Engineering OP-1 / OP-Z control faces · Braun/Rams instrument panels · hardware step sequencers. The metaphor is earned: a week **is** a 7-step sequence, so the UI's core component is a step row, and every screen reads as a control surface for the week. Not: a wellness app, a card feed, a dashboard, a newspaper.
+> Supersedes the v1 monochrome bible. Rationale and the computed palette validation
+> are in `RESEARCH.md`, addendum 2026-07-25. v1 is kept in git history, not here.
 
-**Signature element:** the **7-cell week strip**, drawn like sequencer step keys, used identically everywhere — goal rows, the WEEK table, review results, archive rows. One component carries the whole identity.
+**Anchors:** neobrutalism (hard border + hard offset shadow as the two non-removable
+properties) applied to the v1 instrument-panel grammar. Still a control surface, not
+a card feed: the week *is* a 7-step sequence and the step row remains the signature
+component. Turn the dial up, add colour — do not restyle into a generic app.
 
-### 3.1 Palette (role-named, locked — no other colors anywhere)
+**Governing rule — legibility outranks rawness.** WEEK is a precision instrument.
+Where the neobrutalist reflex and comprehension conflict, comprehension wins. Bold
+is a means, never the goal.
+
+### 3.1 Palette (role-named, locked)
 
 ```
---panel      #E7E8E5   app background (cool aluminum gray)
---panel-deep #DBDDD9   recessed wells: yesterday section, inputs, archive
---surface    #F7F7F5   raised control faces (day cells, steppers, chips)
---ink        #1C1D1B   text, filled/done states, primary buttons
---ink-2      #73766F   meta text, dimmed done-items, diagnostics
---line       #B7BAB3   1.5px control borders, row dividers
---signal     #FF4A00   THE accent: at-risk, review CTA, pre-selected chip
+--paper    #F4F3EE   page
+--card     #FFFFFF   raised faces: cells, chips, steppers, sheets
+--ink      #12100E   text, every border, all shadows
+--ink-2    #5A574F   meta text, diagnostics
+--rule     #D9D7CF   hairline dividers only (never a control border)
 ```
-Rules: **done = ink fill** (never green). **Miss = 45° hatch** of `--line` on `--surface` (`repeating-linear-gradient(45°, 1px line / 5px period)`); resolved-unlogged = hatch + 3px center dot. **≤ 1 signal-orange element visible per screen.** No red anywhere. No gradients anywhere (hatch excepted). Single theme; dark variant is out of scope v1.
+Four goal-type hues. **Colour encodes identity, never decoration.** A hue appears
+only on a mark that means something; ink and paper stay the dominant surfaces.
+```
+--t-quota    #2440E8   on-colour #FFFFFF   (7.06:1)
+--t-pool     #FF4A00   on-colour #12100E   (5.63:1)
+--t-counter  #00A878   on-colour #12100E   (6.21:1)
+--t-fixed    #F075C0   on-colour #12100E   (7.24:1)
+```
+Rules: **done = fill in the goal's hue**, glyph in that hue's on-colour — never
+green-for-good. **Miss = 45° ink hatch on card.** Resolved = hatch + 3 px ink dot.
+No gradients. No glass. No second shadow colour. Adding a fifth hue is forbidden —
+a fifth goal type does not exist. Every coloured fill is enclosed by an ink border
+and accompanied by a text label; colour is never the only channel.
 
 ### 3.2 Type
+- **Display:** `Archivo` 700/800. Day name 34/36 ExtraBold, `letter-spacing −0.02em`.
+  Section heads 20 Bold. Goal names 16 Bold. Fallback `system-ui, sans-serif`.
+- **Data/labels:** `IBM Plex Mono` 500/600 — all numerals (`tabular-nums`), week
+  labels, badges, chips, stamps. Caps labels 11/14, `letter-spacing 0.06em`.
+- **Body:** system sans 15/22. No other families. Banned: Inter, Roboto, Poppins,
+  Space Grotesk, Nunito, Plus Jakarta.
 
-- **Display:** `Archivo` — day name on Today at 30/34 SemiBold, `letter-spacing −0.01em`; section heads 17 SemiBold. Fallback `system-ui, "Helvetica Neue", sans-serif`.
-- **Data/labels:** `IBM Plex Mono` — ALL numerals (`font-variant-numeric: tabular-nums`), week labels, goal meta lines, chips, stamps. Caps labels 11/14, `letter-spacing 0.08em`. Counter digits 22.
-- **Body:** system sans 15/22.
-- No other families. Explicitly banned: Inter, Roboto, Poppins, Space Grotesk, Nunito, Plus Jakarta.
-
-### 3.3 Shape and layout language
-
-- Radii: **0 / 4 / 6 px only** (6 = sheets/dialogs). Borders 1.5 px `--line`; pressed/active borders 2 px `--ink`.
-- No drop shadows except one hard offset `2px 2px 0 var(--line)` on dialogs/sheets. No blur, no glass.
-- Goal rows are **full-width table rows** divided by 1 px lines on `--panel` — never floating cards.
-- Background texture: 1 px `--line` dot grid at 24 px pitch, 35 % opacity, on `--panel` only.
-- Spacing on a 4 px grid but **deliberately varied** (row padding 16, section gaps 28, header 40) — uniform rhythm is a named AI tell.
-- Segmented everything: progress is discrete cells, never a continuous bar.
+### 3.3 Shape, depth, motion
+- Borders **2.5 px `--ink`** on every control and raised face; hairline `--rule`
+  1 px for row dividers only. Radii **0 / 6 / 14** — deliberately mixed; a single
+  uniform radius everywhere is a named AI tell.
+- Depth is one hard offset shadow, ink, never blurred: **4 px 4 px 0** on cards,
+  sheets, dialogs and primary buttons; **2 px 2 px 0** on chips and small controls.
+- **Press = displacement.** Active control translates `+2px,+2px` and its shadow
+  goes to 0, so the surface reads as physically pushed. 90 ms.
+  `prefers-reduced-motion`: opacity only, no transform.
+- Spacing on a 4 px grid but deliberately varied (row 18, section 34, header 40).
+  Bold blocks need air — crowding is the failure mode of this style.
+- Progress is always discrete cells, never a continuous bar.
 
 ### 3.4 Per-object specs
+- **Day cell:** flex-filled (≥ 44 px) × 52, `--card`, 2.5 px ink, r6, 3 px gap; mono
+  day initial 10 top. Today: 3 px ink border + 2 px 2 px 0 shadow. Hit: goal-hue
+  fill + on-colour check. Miss: hatch. Resolved: hatch + dot. Moved: `→`. Future:
+  empty card. Not-in-play: no border, 0.3 opacity.
+- **Type badge:** mono caps 10, goal-hue fill, on-colour text, 2.5 px ink, r6,
+  h 22 — the row's identity, read before any text.
+- **Goal row:** badge + name (Archivo 16 Bold) + mono stat line; control below.
+  At-risk rows carry a 6 px `--t-pool` left bar.
+- **Stepper:** `[−][ 2/3 ][+]` full-width, 52 tall, ink borders, press displacement.
+- **Pool item:** 26 px ink-bordered box, fills goal-hue on done; day chip r6.
+- **Buttons:** h 52, r6, 2.5 px ink, mono caps. Primary = ink fill / paper text.
+  `COMMIT WEEK →` is a `--t-pool` block — the one loudest element per screen.
+- **Stamps:** square, ink border, r6; locked = hatch, earned = goal-agnostic ink
+  fill with mono initials. No emoji, no gold, no glow.
+- **Nav:** active tab sits on a filled ink block with paper text.
 
-- **Day cell:** 38×46 px, `--surface`, 1.5 px `--line`, r4, 2 px gap; mono day initial 10 at top. Today: 2 px `--ink` border. Hit: ink fill, paper check glyph. Miss: hatch. Resolved: hatch + dot. Moved: `→` glyph, dashed border on destination. Future: empty. Not-in-play: borderless `--panel-deep`.
-- **Counter stepper:** `[−] [ 2/3 ] [+]` — three 46 px squares in a row, value cell mono 22; press flashes ink fill 80 ms; `navigator.vibrate(8)` when supported.
-- **Pool item:** 24 px checkbox square (1.5 px, r3, ink-fills on done) · name 15 (done → `--ink-2`, no strikethrough) · suggested-day chip mono caps 10, outlined r3, tap to reassign.
-- **Goal row:** name (Archivo 15 SemiBold) + meta line (mono 11 caps, e.g. `QUOTA · 3/5 · 2 SPARE`) left; native control right/below. Risk state = 3 px `--signal` left rule on the row.
-- **Chips (review):** mono caps 11, outlined r4, h 34; selected = ink fill; rule-suggested = 2 px `--signal` border until user chooses.
-- **Buttons:** primary = ink fill / `--surface` text, h 48, r4, mono caps. `COMMIT WEEK →` is the only signal-filled button in the app.
-- **Tip slot:** `--surface` strip, 3 px `--signal` left rule, mono caps `TIP` label, body 14, × to dismiss.
-
-### 3.5 Motion (exact)
-
-Tick/fill: 120 ms, scale 0.94→1 + fill wipe, `cubic-bezier(0.2, 0, 0, 1)`. Counter digit: vertical slide 150 ms, same curve. Stamp unlock: 240 ms scale 1.15→1 with 1 frame of hatch flicker. Screen changes: 120 ms opacity, no slides. Nothing scroll-triggered, nothing looping, no confetti. `prefers-reduced-motion`: all transforms off, opacity only.
-
-### 3.6 Copy rules
-
-Control labels ≤ 3 words, sentence logic per frontend conventions but chips/labels in mono caps. Diagnostic voice, never cheerleader: "Treadmill missed twice — move it?" not "Don't give up! 💪". Buttons say what they do (`COMMIT WEEK`, `PARK GOAL`). Errors state cause + fix. Empty states are invitations ("No goals yet — plan the week").
+### 3.5 Copy
+Unchanged from v1: control labels ≤ 3 words, diagnostic voice, never cheerleader.
+Buttons say what they do. Errors state cause + fix.
 
 ---
 
 ## 4. Forbidden list (audit before done)
 
-Gradients · backdrop-blur/glass · box-shadows other than the single hard offset · emoji anywhere · Inter/Roboto/Poppins/Space Grotesk/Nunito · purple/violet/#6C5CE7 family · "Tailwind blue" · warm-cream + terracotta pairing · red failure states · green success states · flame/streak icons · smooth progress bars · confetti/particles · floating card grids with soft shadows · uniform border-radius/padding across all elements · hero-plus-three-cards structure · scroll-triggered fade-ins · skeleton shimmer · motivational-poster copy · toasts that praise ("Great job!") · more than one signal-orange element per screen · icons other than inline 1.5 px-stroke SVG (max 12 total) · any second accent color.
-
----
+Gradients · backdrop-blur/glass · any blurred or non-ink shadow · emoji · Inter/
+Roboto/Poppins/Space Grotesk/Nunito · purple/violet accents (`#6C5CE7` family) ·
+"Tailwind blue" `#3B82F6` · warm-cream + terracotta pairing · red failure states ·
+green-for-success (green is the counter's identity hue, not a verdict) · flame/
+streak icons · smooth progress bars · confetti/particles · soft-shadow floating
+card grids · one uniform radius across all elements · hero-plus-three-cards ·
+scroll-triggered fade-ins · skeleton shimmer · motivational-poster copy · toasts
+that praise · a fifth accent hue · colour as the only channel for any state ·
+icons other than inline 1.5 px-stroke SVG (max 12).
 
 ## 5. Acceptance criteria (self-checkable)
 
@@ -226,5 +258,16 @@ Gradients · backdrop-blur/glass · box-shadows other than the single hard offse
 - **M4 — Trophies + tips.** Both engines + archive rows. *Gate: criterion 9; each tip trigger simulated once.*
 - **M5 — Style transform.** Until now the UI may be plain. Apply the full bible: palette, type, per-object specs, dot grid, signature strip everywhere. *Gate: forbidden-list audit + squint test (criterion 12).* 
 - **M6 — Polish.** Motion + haptics + reduced-motion, export/import, seed flow, settings, wipe. *Gate: full acceptance run, criteria 1–12.*
+
+- **M7 — Colour transform (style bible v2).** Replace the v1 monochrome surface with
+  the neobrutalist system above. Pure restyle: no goal logic, no state shape, no
+  class renames (the test harness selects on them). *Gate: 53/53 assertions still
+  green · every browser suite zero console errors · tap targets ≥ 44 px · contrast
+  spot-checks hold · forbidden-list audit clean · squint test — still a control
+  surface, now unmistakably colour-coded.*
+  - [x] palette computed and validated (`RESEARCH.md` 2026-07-25)
+  - [x] style bible v2 written
+  - [x] implemented in `index.html`
+  - [x] verified and screenshotted
 
 Out of scope v1 (do not build): notifications/push · cohorts/social · Health Connect/wearables · maintenance/graduated-goal tracking · paid tier · dark mode · Dutch strings · PWA service worker.
