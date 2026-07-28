@@ -1100,7 +1100,10 @@ function buildStrip(g, wg, opts){
   for (let d=0; d<7; d++){
     // only today's cell is ever tappable; the rest are read-only marks, so they
     // are drawn as plain divs and stay out of the tab order
-    const tappable = !!opts.interactive && d===n.day &&
+    // today, plus yesterday while the grace window is open
+    const graceDay = (n.hour < graceHour() && n.day-1 >= startDay) ? n.day-1 : -1;
+    const editableDay = (d===n.day || d===graceDay);
+    const tappable = !!opts.interactive && editableDay &&
       (g.type==="quota" || (g.type==="fixed" && wg.snap.days.includes(d) && !(wg.swaps||{})[d]));
     const cell = el(tappable ? "button" : "div", "cell");
     cell.setAttribute("aria-label", DAY_FULL[d]);
@@ -1320,7 +1323,9 @@ function renderToday(){
   // yesterday grace section
   if (n.hour < graceHour() && n.day-1 >= (wk.committedOnDay||0)){
     const yday = n.day-1;
-    const needing = active.filter(function(wg){ return dayNeedsLog(state.goals.find(x=>x.id===wg.goalId), wg, yday); });
+    // "editable until HH:MM" means changeable, not fillable-once, so an already
+    // logged yesterday is listed too
+    const needing = active.filter(function(wg){ return dayInPlay(state.goals.find(x=>x.id===wg.goalId), wg, yday); });
     if (needing.length){
       scr.appendChild(el("div","sec-head",STR.yesterdayOpen+fmtHour(graceHour())));
       const rec = el("div","recessed rows");
@@ -1357,6 +1362,13 @@ function renderToday(){
     scr.appendChild(b);
   }
 }
+/* a goal has something to log OR change on this day (pool has no per-day mark) */
+function dayInPlay(g, wg, d){
+  if (!g) return false;
+  if (g.type==="quota" || g.type==="counter") return true;
+  if (g.type==="fixed") return wg.snap.days.includes(d) && !(wg.swaps||{})[d];
+  return false;
+}
 function dayNeedsLog(g, wg, d){
   if (!g) return false;
   if (g.type==="quota") return !wg.days[d];
@@ -1369,20 +1381,26 @@ function yesterdayRow(g, wg, d){
   const top = el("div","top");
   const left = el("div");
   left.appendChild(el("div","name", g.name));
-  left.appendChild(el("div","meta caps", DAYS[d].toUpperCase()+" — still open"));
+  const cur = wg.days[d];
+  let note = DAYS[d].toUpperCase()+" — still open";
+  if (g.type==="counter") note = DAYS[d].toUpperCase()+" · "+(wg.counts[d]!=null?wg.counts[d]:0)+"/"+wg.snap.perDay;
+  else if (cur==="hit") note = DAYS[d].toUpperCase()+" · HIT";
+  else if (cur==="miss") note = DAYS[d].toUpperCase()+" · MISS";
+  else if (cur==="resolved") note = DAYS[d].toUpperCase()+" · UNLOGGED";
+  left.appendChild(el("div","meta caps", note));
   top.appendChild(left);
   row.appendChild(top);
   const ctl = el("div","ctl");
   if (g.type==="quota" || g.type==="fixed"){
-    const yes = el("button","btn primary sm","Hit"); yes.style.width="auto";
-    const no = el("button","btn quiet sm","Miss"); no.style.width="auto";
-    yes.addEventListener("click", function(){ wg.days[d]="hit"; save(); renderRoot(); });
-    no.addEventListener("click", function(){ wg.days[d]="miss"; save(); renderRoot(); });
+    // the current value is shown as selected, and either button can change it
+    const yes = el("button","btn sm "+(cur==="hit"?"primary":"quiet"),"Hit"); yes.style.width="auto";
+    const no  = el("button","btn sm "+(cur==="miss"?"primary":"quiet"),"Miss"); no.style.width="auto";
+    yes.addEventListener("click", function(){ wg.days[d]="hit"; save(); vibrate(8); renderRoot(); });
+    no.addEventListener("click", function(){ wg.days[d]="miss"; save(); vibrate(8); renderRoot(); });
     const bar = el("div","btnrow"); bar.appendChild(yes); bar.appendChild(no);
     ctl.appendChild(bar);
   } else if (g.type==="counter"){
-    const wrap = counterControlForDay(g, wg, d);
-    ctl.appendChild(wrap);
+    ctl.appendChild(counterControlForDay(g, wg, d));
   }
   row.appendChild(ctl);
   return row;
@@ -2120,7 +2138,7 @@ function renderGrace(ph){
   const rec = el("div","recessed rows"); rec.style.marginTop="12px";
   wk.goals.forEach(function(wg){
     const g = state.goals.find(x=>x.id===wg.goalId);
-    if (g && dayNeedsLog(g, wg, ph.day)) rec.appendChild(yesterdayRow(g, wg, ph.day));
+    if (g && dayInPlay(g, wg, ph.day)) rec.appendChild(yesterdayRow(g, wg, ph.day));
   });
   scr.appendChild(rec);
   const go = el("button","btn commit","Review week "+isoInfo(mondayOfKey(ph.key)).week+" →");
