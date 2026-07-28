@@ -710,7 +710,13 @@ function phase(){
   const ck = currentWeekKey();
   // forced review: any prior committed but unreviewed week that is older than current
   const forced = findForcedReview(ck);
-  if (forced) return { mode:"review", key:forced, forced:true };
+  if (forced){
+    // still entitled to yesterday: let it be logged before judging the week
+    const g = graceTarget();
+    if (g && g.key===forced && weekHasUnlogged(forced, g.day))
+      return { mode:"grace", key:forced, day:g.day };
+    return { mode:"review", key:forced, forced:true };
+  }
   if (!state.weeks[ck]) return { mode:"planning", key:ck };
   // review window on Sunday
   return { mode:"active", key:ck };
@@ -733,12 +739,56 @@ function weekSettled(){
   return !!(wk && wk.reviewedAt) || reviewUnlocked();
 }
 
+/* ============================ GRACE ACROSS THE WEEK BOUNDARY ============================ */
+/* "Yesterday" is a calendar day, so on a Monday it belongs to the previous ISO
+   week. Returns the week+day still inside the grace window, or null. */
+function graceTarget(){
+  const n = nowCtx();
+  if (n.hour >= CFG.graceHour) return null;
+  const d = new Date(n.date); d.setDate(d.getDate()-1);
+  const key = weekKeyOf(d);
+  const day = (d.getDay()+6)%7;
+  const wk = state.weeks[key];
+  if (!wk || wk.reviewedAt) return null;
+  if (day < (wk.committedOnDay||0)) return null;
+  return { key, day, wk };
+}
+function weekHasUnlogged(key, day){
+  const wk = state.weeks[key]; if (!wk) return false;
+  return wk.goals.some(function(wg){
+    const g = state.goals.find(x=>x.id===wg.goalId);
+    return g && dayNeedsLog(g, wg, day);
+  });
+}
+
 /* ============================ RESOLVER ON OPEN ============================ */
 function sweepOnOpen(){
   const n = nowCtx();
-  const w = state.weeks[currentWeekKey()];
-  if (w){ resolveWeek(state.goals, w, n); }
+  const ck = currentWeekKey();
+  const g = graceTarget();
+  Object.keys(state.weeks).forEach(function(k){
+    const wk = state.weeks[k];
+    if (wk.reviewedAt) return;
+    if (k === ck){ resolveWeek(state.goals, wk, n); return; }
+    // a prior unreviewed week was never swept at all: everything past resolves,
+    // except a day that is still inside the grace window
+    if (k < ck) resolvePastWeek(state.goals, wk, (g && g.key===k) ? g.day : null);
+  });
   save();
+}
+function resolvePastWeek(goals, wk, exemptDay){
+  const startDay = wk.committedOnDay || 0;
+  for (const wg of wk.goals){
+    const g = goals.find(x=>x.id===wg.goalId); if (!g) continue;
+    for (let d=startDay; d<7; d++){
+      if (d === exemptDay) continue;
+      if (g.type==="quota" || g.type==="fixed"){
+        if (g.type==="fixed" && !wg.snap.days.includes(d) && !invSwapHas(wg,d)) continue;
+        if (g.type==="fixed" && invSwapOrigin(wg,d)) continue;
+        if (!wg.days[d] || wg.days[d]==="unlogged") wg.days[d] = "resolved";
+      }
+    }
+  }
 }
 
 /* ============================ ACHIEVEMENTS ============================ */
@@ -1233,7 +1283,7 @@ function renderToday(){
   const ph = phase();
   const n = nowCtx();
 
-  if (ph.mode==="planning"){ renderPlanningInto(scr); return; }
+  if (ph.mode==="planning" || !currentWeek()){ renderPlanningInto(scr); return; }
 
   // Signal-orange budget: the Sunday review banner outranks the tip slot, so
   // Today never stacks two orange advisory strips.
@@ -1317,8 +1367,8 @@ function yesterdayRow(g, wg, d){
   if (g.type==="quota" || g.type==="fixed"){
     const yes = el("button","btn primary sm","Hit"); yes.style.width="auto";
     const no = el("button","btn quiet sm","Miss"); no.style.width="auto";
-    yes.addEventListener("click", function(){ wg.days[d]="hit"; save(); renderToday(); });
-    no.addEventListener("click", function(){ wg.days[d]="miss"; save(); renderToday(); });
+    yes.addEventListener("click", function(){ wg.days[d]="hit"; save(); renderRoot(); });
+    no.addEventListener("click", function(){ wg.days[d]="miss"; save(); renderRoot(); });
     const bar = el("div","btnrow"); bar.appendChild(yes); bar.appendChild(no);
     ctl.appendChild(bar);
   } else if (g.type==="counter"){
@@ -1336,8 +1386,8 @@ function counterControlForDay(g, wg, d){
   const plus = el("button","step-btn","+");
   const draw = function(){ val.textContent=(wg.counts[d]||0)+"/"+wg.snap.perDay; };
   draw();
-  minus.addEventListener("click", function(){ wg.counts[d]=Math.max(0,(wg.counts[d]||0)-1); save(); renderToday(); });
-  plus.addEventListener("click", function(){ wg.counts[d]=(wg.counts[d]||0)+1; save(); renderToday(); });
+  minus.addEventListener("click", function(){ wg.counts[d]=Math.max(0,(wg.counts[d]||0)-1); save(); renderRoot(); });
+  plus.addEventListener("click", function(){ wg.counts[d]=(wg.counts[d]||0)+1; save(); renderRoot(); });
   step.appendChild(minus); step.appendChild(val); step.appendChild(plus);
   wrap.appendChild(step);
   return wrap;
@@ -1348,7 +1398,7 @@ function renderWeek(){
   const scr = document.getElementById("week-screen");
   scr.innerHTML = "";
   const ph = phase();
-  if (ph.mode==="planning"){ renderPlanningInto(scr); return; }
+  if (ph.mode==="planning" || !currentWeek()){ renderPlanningInto(scr); return; }
   const wk = currentWeek();
   scr.appendChild(el("div","sec-head","The week"));
   const table = el("div","rows wtable");
@@ -2026,11 +2076,35 @@ function renderRoot(){
   renderHeader();
   // rollover: a prior committed-but-unreviewed week forces the Review screen first
   const ph = phase();
+  if (ph.mode==="grace"){ renderGrace(ph); return; }
   if (ph.mode==="review" && ph.forced){
     openReview(ph.key, true);
     return;
   }
   showTab(activeTab);
+}
+
+/* ---- catch-up: finish the still-open day, then review ---- */
+function renderGrace(ph){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
+  const scr = document.getElementById("today-screen");
+  scr.classList.add("on");
+  document.getElementById("nav").style.display="none";
+  scr.innerHTML = "";
+  const wk = state.weeks[ph.key];
+  scr.appendChild(el("div","sec-head", STR.yesterdayOpen));
+  scr.appendChild(el("div","meta caps",
+    DAY_FULL[ph.day].toUpperCase()+" · "+weekLabel(mondayOfKey(ph.key))));
+  const rec = el("div","recessed rows"); rec.style.marginTop="12px";
+  wk.goals.forEach(function(wg){
+    const g = state.goals.find(x=>x.id===wg.goalId);
+    if (g && dayNeedsLog(g, wg, ph.day)) rec.appendChild(yesterdayRow(g, wg, ph.day));
+  });
+  scr.appendChild(rec);
+  const go = el("button","btn commit","Review week "+isoInfo(mondayOfKey(ph.key)).week+" →");
+  go.style.marginTop="24px";
+  go.addEventListener("click", function(){ openReview(ph.key, true); });
+  scr.appendChild(go);
 }
 
 /* ---- haptics ---- */
