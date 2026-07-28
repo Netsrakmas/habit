@@ -147,6 +147,8 @@ main{flex:1; padding:0 var(--gutter);}
 .cell.future{background:var(--surface);}
 .cell.nip{background:transparent; border-color:var(--line); opacity:0.3;}
 .cell.blank{background:transparent; opacity:0.32;}
+.cell.blank.tap{opacity:0.65;}
+.cell .glyph.plus{font-family:var(--mono); font-size:17px; color:var(--ink-2); line-height:1;}
 .cell.tap{cursor:pointer;}
 .cell.tap:active{transform:scale(0.94);}
 
@@ -506,6 +508,45 @@ function fixedVerdict(scheduledDays, days, swaps){
   const inst = fixedInstances(scheduledDays, days, swaps);
   return inst.every(function(i){ return i.state === "hit"; }) ? "HIT" : "MISS";
 }
+/* Earliest instance still owed: not yet hit and not already moved. */
+function outstandingFixedInstance(wg){
+  const swaps = wg.swaps || {};
+  const owed = wg.snap.days.filter(function(o){
+    if (swaps[o] != null) return false;                  // already moved once
+    return (wg.days[o] || "unlogged") !== "hit";
+  });
+  return owed.length ? owed[0] : null;
+}
+/* Log a session on a day the goal is not scheduled for. The session absorbs the
+   earliest owed instance by moving it here, so the verdict math is unchanged and
+   the one-swap-per-instance rule still holds. Tapping again releases it.
+   Unlike trySwapFixed this records something that already happened, so it does
+   not require a future day to remain. Returns "logged" | null. */
+function logFixedOffDay(wg, d){
+  const swaps = wg.swaps || (wg.swaps = {});
+  if (fixedDestOrigin(wg, d) != null) return null;        // already holds a session
+  const origin = outstandingFixedInstance(wg);
+  if (origin == null) return null;                       // nothing owed to absorb
+  swaps[origin] = d;
+  wg.days[d] = "hit";
+  delete wg.days[origin];
+  return "logged";
+}
+
+/* Which instance, if any, currently sits on this day because it was moved here. */
+function fixedDestOrigin(wg, d){
+  const swaps = wg.swaps || {};
+  for (const o in swaps){ if (swaps[o] === d) return +o; }
+  return null;
+}
+/* Send a moved session back to its own day. */
+function releaseFixedDay(wg, d){
+  const o = fixedDestOrigin(wg, d);
+  if (o == null) return false;
+  delete wg.swaps[o]; delete wg.days[d];
+  return true;
+}
+
 /* Attempt a single swap. Returns {ok, reason}. Mutates swaps on success. */
 function trySwapFixed(swaps, scheduledDays, origin, dest, todayIdx){
   if (swaps[origin] != null) return { ok:false, reason:"already-swapped" };
@@ -1103,8 +1144,18 @@ function buildStrip(g, wg, opts){
     // today, plus yesterday while the grace window is open
     const graceDay = (n.hour < graceHour() && n.day-1 >= startDay) ? n.day-1 : -1;
     const editableDay = (d===n.day || d===graceDay);
-    const tappable = !!opts.interactive && editableDay &&
-      (g.type==="quota" || (g.type==="fixed" && wg.snap.days.includes(d) && !(wg.swaps||{})[d]));
+    let tappable = false;
+    if (opts.interactive && editableDay){
+      if (g.type==="quota") tappable = true;
+      else if (g.type==="fixed"){
+        const here = wg.snap.days.includes(d) && !(wg.swaps||{})[d];
+        const holdsMoved = swapDest[d] != null;
+        // a scheduled day, a day already holding a moved session, or a free
+        // off-day while an instance is still owed
+        tappable = here || holdsMoved ||
+          (!wg.snap.days.includes(d) && outstandingFixedInstance(wg) != null);
+      }
+    }
     const cell = el(tappable ? "button" : "div", "cell");
     cell.setAttribute("aria-label", DAY_FULL[d]);
     const lab = el("span","d mono", DAY_INI[d]); cell.appendChild(lab);
@@ -1137,7 +1188,13 @@ function buildStrip(g, wg, opts){
 
     if (tappable){
       cell.classList.add("tap");
-      cell.addEventListener("click", function(){ toggleDay(g, wg, d, cell); });
+      if (g.type==="fixed" && st==="blank"){
+        const plus = el("span","glyph plus","+"); cell.appendChild(plus);
+      }
+      cell.addEventListener("click", function(){
+        if (g.type==="fixed") toggleFixedDay(g, wg, d);
+        else toggleDay(g, wg, d, cell);
+      });
     }
     strip.appendChild(cell);
   }
@@ -1164,6 +1221,24 @@ function checkGlyph(){
 
 function currentWeek(){ return state.weeks[currentWeekKey()]; }
 
+function toggleFixedDay(g, wg, d){
+  const swaps = wg.swaps || (wg.swaps = {});
+  const scheduledHere = wg.snap.days.includes(d) && swaps[d] == null;
+  const destOrigin = fixedDestOrigin(wg, d);
+  if (scheduledHere || destOrigin != null){
+    // same cycle as a quota cell: hit -> miss -> clear. Clearing a session that
+    // was moved here sends it back to its own day.
+    const cur = wg.days[d];
+    const next = cur==="hit" ? "miss" : (cur==="miss" ? null : "hit");
+    if (next == null){
+      delete wg.days[d];
+      if (destOrigin != null) delete swaps[destOrigin];
+    } else wg.days[d] = next;
+    save(); vibrate(8); renderRoot();
+    return;
+  }
+  if (logFixedOffDay(wg, d)){ save(); vibrate(8); renderRoot(); }
+}
 function toggleDay(g, wg, d, cell){
   const cur = wg.days[d];
   const next = cur==="hit" ? "miss" : (cur==="miss" ? "unlogged" : "hit");
@@ -2297,6 +2372,38 @@ function runTests(){
     assert("10 5th friction", slotAction(4)==="friction", slotAction(4));
     assert("10 6th blocked", slotAction(5)==="blocked", slotAction(5));
     assert("10 hard cap holds", slotAction(6)==="blocked", slotAction(6));
+  })();
+
+  // 12. FIXED logged on an off day absorbs the earliest owed instance
+  (function(){
+    const mk = ()=>({ snap:{days:[0,2,4]}, days:{}, swaps:{}, counts:{}, poolDone:{} });
+    // Mon missed, session actually done on Tue
+    let wg = mk(); wg.days={0:"miss"};
+    assert("12 off-day log accepted", logFixedOffDay(wg,1)==="logged", wg);
+    assert("12 Mon moved to Tue", wg.swaps[0]===1, wg.swaps);
+    assert("12 Tue is a hit", wg.days[1]==="hit", wg.days);
+    const inst = fixedInstances(wg.snap.days, wg.days, wg.swaps);
+    assert("12 still three instances", inst.length===3, inst.length);
+    assert("12 moved instance counts as hit", inst.find(i=>i.origin===0).state==="hit", inst);
+    // completing the rest gives a HIT week
+    wg.days[2]="hit"; wg.days[4]="hit";
+    assert("12 verdict HIT after off-day make-up", fixedVerdict(wg.snap.days,wg.days,wg.swaps)==="HIT",
+           fixedVerdict(wg.snap.days,wg.days,wg.swaps));
+    // a second off-day session takes the NEXT owed instance, never the moved one
+    let wg2 = mk(); wg2.days={0:"miss"};
+    logFixedOffDay(wg2,1);
+    assert("12 second off-day log accepted", logFixedOffDay(wg2,3)==="logged", wg2.swaps);
+    assert("12 absorbs Wed, not Mon again", wg2.swaps[2]===3 && wg2.swaps[0]===1, wg2.swaps);
+    // a day already holding a session is not absorbed a second time
+    assert("12 occupied day not re-absorbed", logFixedOffDay(wg2,3)===null, wg2.swaps);
+    assert("12 dest origin is traceable", fixedDestOrigin(wg2,3)===2, fixedDestOrigin(wg2,3));
+    // releasing sends the session back to its own day
+    assert("12 release works", releaseFixedDay(wg2,3)===true, wg2.swaps);
+    assert("12 Wed instance released", wg2.swaps[2]==null && wg2.days[3]==null, wg2.swaps);
+    // nothing owed => nothing to absorb
+    let wg3 = mk(); wg3.days={0:"hit",2:"hit",4:"hit"};
+    assert("12 nothing owed => no-op", logFixedOffDay(wg3,1)===null, wg3.swaps);
+    assert("12 one swap per instance holds", outstandingFixedInstance(wg2)!=null, "");
   })();
 
   // 11b. legacy state without graceHour falls back to the default
