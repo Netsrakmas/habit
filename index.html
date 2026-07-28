@@ -331,8 +331,9 @@ nav button.on .ic{color:var(--ink);}
 }
 .sheet h2, .dialog h2{padding-right:40px;}
 .sheet h2, .dialog h2{font-family:var(--display); font-weight:600; font-size:19px; margin:0 0 4px;}
-.sheet .row{display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:14px 0; border-bottom:1px solid var(--line);}
+.sheet .row{display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:16px 0; border-bottom:1px solid var(--line);}
+.rownote{font-size:12px; line-height:16px; color:var(--ink-2); margin-top:3px; max-width:20ch;}
 .sheet .row:last-of-type{border-bottom:none;}
 .dialog p{font-size:14px; line-height:20px; color:var(--ink-2); margin:6px 0 16px;}
 
@@ -409,7 +410,8 @@ const CFG = {
   goalsHard: 6,          // 6 = hard cap
   reviewUnlockDay: 6,    // Sunday (Mon=0..Sun=6)
   reviewUnlockHour: 18,  // 18:00
-  graceHour: 12,         // yesterday editable until 12:00
+  defaultGraceHour: 14,  // yesterday stays editable until this hour (user-adjustable)
+  graceHourMin: 1, graceHourMax: 23,
   defaultReviewHour: 20.5,
   tipCooldownDays: 21,
   poolMin: 2, poolMax: 8,
@@ -420,7 +422,7 @@ const CFG = {
 const STR = {
   storageUnavailable: "Storage unavailable — demo mode",
   today: "Today", week: "Week", trophies: "Trophies",
-  yesterdayOpen: "Yesterday — open till 12:00",
+  yesterdayOpen: "Yesterday — open till ",
   reviewReady: "Review ready — Sunday reckoning",
   openReview: "Open review",
   noGoals: "No goals yet — plan the week.",
@@ -533,18 +535,25 @@ function poolRemaining(snap, wg){
 
 /* ---- resolver (grace sweep) ---- */
 /* For a week, resolve unlogged past days. now = {day, hour}. Mutates wg.days. */
-function isResolvable(dayIdx, now){
+/* live grace deadline; falls back to the default for state saved before it existed */
+function graceHour(){
+  const v = state && state.settings ? state.settings.graceHour : null;
+  return (typeof v === "number") ? v : CFG.defaultGraceHour;
+}
+/* gh is explicit so the resolver stays a pure function the harness can pin */
+function isResolvable(dayIdx, now, gh){
+  if (gh == null) gh = graceHour();
   if (dayIdx > now.day) return false;      // future
   if (dayIdx === now.day) return false;    // today, editable
-  if (dayIdx === now.day - 1) return now.hour >= CFG.graceHour; // yesterday
+  if (dayIdx === now.day - 1) return now.hour >= gh; // yesterday
   return true;                             // older than yesterday
 }
-function resolveWeek(goals, wk, now){
+function resolveWeek(goals, wk, now, gh){
   const startDay = wk.committedOnDay || 0;
   for (const wg of wk.goals){
     const g = goals.find(x=>x.id===wg.goalId); if (!g) continue;
     for (let d=startDay; d<7; d++){
-      if (!isResolvable(d, now)) continue;
+      if (!isResolvable(d, now, gh)) continue;
       if (g.type==="quota" || g.type==="fixed"){
         if (g.type==="fixed" && !wg.snap.days.includes(d) && !invSwapHas(wg, d)) continue;
         if (g.type==="fixed" && invSwapOrigin(wg, d)) continue; // origin moved away
@@ -629,7 +638,7 @@ function storageProbe(){
 function freshState(){
   return {
     schemaVersion: CFG.schemaVersion,
-    settings: { reviewHour: CFG.defaultReviewHour, lang:"en" },
+    settings: { reviewHour: CFG.defaultReviewHour, graceHour: CFG.defaultGraceHour, lang:"en" },
     goals: [],
     weeks: {},
     achievements: {},
@@ -744,7 +753,7 @@ function weekSettled(){
    week. Returns the week+day still inside the grace window, or null. */
 function graceTarget(){
   const n = nowCtx();
-  if (n.hour >= CFG.graceHour) return null;
+  if (n.hour >= graceHour()) return null;
   const d = new Date(n.date); d.setDate(d.getDate()-1);
   const key = weekKeyOf(d);
   const day = (d.getDay()+6)%7;
@@ -1309,11 +1318,11 @@ function renderToday(){
   const active = wk.goals.filter(function(wg){ const g=state.goals.find(x=>x.id===wg.goalId); return g && g.status==="active"; });
 
   // yesterday grace section
-  if (n.hour < CFG.graceHour && n.day-1 >= (wk.committedOnDay||0)){
+  if (n.hour < graceHour() && n.day-1 >= (wk.committedOnDay||0)){
     const yday = n.day-1;
     const needing = active.filter(function(wg){ return dayNeedsLog(state.goals.find(x=>x.id===wg.goalId), wg, yday); });
     if (needing.length){
-      scr.appendChild(el("div","sec-head",STR.yesterdayOpen));
+      scr.appendChild(el("div","sec-head",STR.yesterdayOpen+fmtHour(graceHour())));
       const rec = el("div","recessed rows");
       needing.forEach(function(wg){
         const g = state.goals.find(x=>x.id===wg.goalId);
@@ -1949,17 +1958,13 @@ function openSettings(){
   const body = el("div");
   body.appendChild(el("h2",null,"Settings"));
 
-  const r1 = el("div","row");
-  r1.appendChild(el("div",null,"Review hour"));
-  const rh = el("div","step-val hour", fmtHour(state.settings.reviewHour));
-  const rhbox = el("div","stepper compact");
-  const dn = el("button","step-btn","−");
-  const up = el("button","step-btn","+");
-  dn.addEventListener("click", function(){ state.settings.reviewHour=clamp(state.settings.reviewHour-0.5,0,23.5); rh.textContent=fmtHour(state.settings.reviewHour); save(); });
-  up.addEventListener("click", function(){ state.settings.reviewHour=clamp(state.settings.reviewHour+0.5,0,23.5); rh.textContent=fmtHour(state.settings.reviewHour); save(); });
-  rhbox.appendChild(dn); rhbox.appendChild(rh); rhbox.appendChild(up);
-  r1.appendChild(rhbox);
-  body.appendChild(r1);
+  body.appendChild(hourRow("Review hour", null,
+    function(){ return state.settings.reviewHour; },
+    function(v){ state.settings.reviewHour = v; }, 0, 23.5, 0.5));
+  body.appendChild(hourRow("Grace deadline", "Yesterday stays editable until this hour.",
+    graceHour,
+    function(v){ state.settings.graceHour = v; },
+    CFG.graceHourMin, CFG.graceHourMax, 1));
 
   const r2 = el("div","row");
   r2.appendChild(el("div",null,"Export JSON"));
@@ -1987,6 +1992,23 @@ function openSettings(){
   body.appendChild(r4);
 
   openSheet(body);
+}
+function hourRow(label, note, get, set, lo, hi, step){
+  const row = el("div","row");
+  const left = el("div");
+  left.appendChild(el("div",null,label));
+  if (note) left.appendChild(el("div","rownote", note));
+  row.appendChild(left);
+  const val = el("div","step-val hour", fmtHour(get()));
+  const box = el("div","stepper compact");
+  const dn = el("button","step-btn","−"); dn.setAttribute("aria-label","decrease "+label);
+  const up = el("button","step-btn","+"); up.setAttribute("aria-label","increase "+label);
+  const bump = function(d){ set(clamp(get()+d, lo, hi)); val.textContent = fmtHour(get()); save(); };
+  dn.addEventListener("click", function(){ bump(-step); });
+  up.addEventListener("click", function(){ bump(step); });
+  box.appendChild(dn); box.appendChild(val); box.appendChild(up);
+  row.appendChild(box);
+  return row;
 }
 function fmtHour(h){ const H=Math.floor(h); const M=(h-H)*60; return String(H).padStart(2,"0")+":"+String(M).padStart(2,"0"); }
 function exportDownload(){
@@ -2092,7 +2114,7 @@ function renderGrace(ph){
   document.getElementById("nav").style.display="none";
   scr.innerHTML = "";
   const wk = state.weeks[ph.key];
-  scr.appendChild(el("div","sec-head", STR.yesterdayOpen));
+  scr.appendChild(el("div","sec-head", STR.yesterdayOpen+fmtHour(graceHour())));
   scr.appendChild(el("div","meta caps",
     DAY_FULL[ph.day].toUpperCase()+" · "+weekLabel(mondayOfKey(ph.key))));
   const rec = el("div","recessed rows"); rec.style.marginTop="12px";
@@ -2190,16 +2212,21 @@ function runTests(){
 
   // 7. Grace: Tue 11:59 Mon editable; Tue 12:00 Mon resolves; Wed Mon view-only
   (function(){
-    // now: Tue=1, hour 11.98 => Mon(0) NOT resolvable
-    assert("7 Tue 11:59 Mon editable", isResolvable(0,{day:1,hour:11.98})===false, "");
-    // Tue 12:00 => Mon resolvable
-    assert("7 Tue 12:00 Mon resolves", isResolvable(0,{day:1,hour:12})===true, "");
+    // criterion 7 is written against a 12:00 deadline, so pin it explicitly —
+    // it must keep holding whatever the user's configured grace hour is
+    assert("7 Tue 11:59 Mon editable", isResolvable(0,{day:1,hour:11.98},12)===false, "");
+    assert("7 Tue 12:00 Mon resolves", isResolvable(0,{day:1,hour:12},12)===true, "");
     // Wed => Mon (older than yesterday) resolvable/view-only
-    assert("7 Wed Mon view-only", isResolvable(0,{day:2,hour:9})===true, "");
+    assert("7 Wed Mon view-only", isResolvable(0,{day:2,hour:9},12)===true, "");
+    // the shipped default deadline is 14:00 and the boundary tracks it
+    assert("7 default grace hour is 14", CFG.defaultGraceHour===14, CFG.defaultGraceHour);
+    assert("7 Tue 13:59 Mon editable @14", isResolvable(0,{day:1,hour:13.98},14)===false, "");
+    assert("7 Tue 14:00 Mon resolves @14", isResolvable(0,{day:1,hour:14},14)===true, "");
+    assert("7 Tue 12:00 still editable @14", isResolvable(0,{day:1,hour:12},14)===false, "");
     // actual resolve flip on quota
     const goals=[{id:"g",type:"quota"}];
     const wk={committedOnDay:0, goals:[{goalId:"g", snap:{target:5,dip:7}, days:{}, swaps:{}, counts:{}, poolDone:{}}]};
-    resolveWeek(goals, wk, {day:1, hour:12});
+    resolveWeek(goals, wk, {day:1, hour:12}, 12);
     assert("7 resolve sets Mon resolved", wk.goals[0].days[0]==="resolved", wk.goals[0].days);
     assert("7 resolve leaves today unlogged", wk.goals[0].days[1]==null, wk.goals[0].days);
   })();
@@ -2252,6 +2279,16 @@ function runTests(){
     assert("10 5th friction", slotAction(4)==="friction", slotAction(4));
     assert("10 6th blocked", slotAction(5)==="blocked", slotAction(5));
     assert("10 hard cap holds", slotAction(6)==="blocked", slotAction(6));
+  })();
+
+  // 11b. legacy state without graceHour falls back to the default
+  (function(){
+    const saved = state;
+    state = seedState(); delete state.settings.graceHour;
+    assert("11b legacy state falls back to default grace", graceHour()===CFG.defaultGraceHour, graceHour());
+    state.settings.graceHour = 9;
+    assert("11b configured grace hour is honoured", graceHour()===9, graceHour());
+    state = saved;
   })();
 
   // 11. Export -> wipe -> import deep-equal
